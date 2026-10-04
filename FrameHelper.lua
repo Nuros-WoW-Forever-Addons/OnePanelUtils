@@ -163,6 +163,7 @@ function FrameHelper:AttachTitleBar(frame, titleText)
     frame.TitleText = title
     
     -- Enable dragging if requested
+    frame:SetMovable(true)
     frame:EnableMouse(true)
     frame:RegisterForDrag("LeftButton")
     frame:SetScript("OnDragStart", function(self)
