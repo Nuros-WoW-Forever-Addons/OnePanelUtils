@@ -1,0 +1,11 @@
+## Interface: 16001
+## Title: OnePanel |cff00ccffUtils|r
+## Notes: Core utility library, safe call dispatcher, logging, frame helper, and event system for OnePanel Suite.
+## Author: OnePanel Suite Team
+## Version: 0.0.1
+## SavedVariables: OnePanelUtilsDB
+
+Core.lua
+Logger.lua
+FrameHelper.lua
+EventBus.lua
