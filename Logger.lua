@@ -52,6 +52,11 @@ end
 -- @param message string: The message text to print
 function Logger:Log(tag, level, message)
     level = (level or "INFO"):upper()
+
+    if _G.OneSwatter and _G.OneSwatter.Log then
+        _G.OneSwatter:Log("OnePanelUtils", level, tag, message)
+    end
+
     if not self:IsLevelEnabled(level) then return end
     
     local color = self.Colors[level] or "|cffffffff"
