@@ -226,6 +226,86 @@ SlashCmdList["ONEPANELDUMP"] = function(msg)
     dialog.editBox:HighlightText()
 end
 
+-- Slash command: /opbutton [OptionalButtonName]
+-- Usage: Hover over a button and type /opbutton, or type /opbutton CharacterFrameTab1
+SLASH_ONEPANELBUTTON1 = "/opbutton"
+SlashCmdList["ONEPANELBUTTON"] = function(msg)
+    local name = (msg and msg ~= "") and msg:match("^%s*(.-)%s*$") or nil
+    local btn = name and _G[name]
+    
+    if not btn then
+        if GetMouseFoci then
+            local foci = GetMouseFoci()
+            btn = foci and foci[1]
+        elseif GetMouseFocus then
+            btn = GetMouseFocus()
+        end
+    end
+
+    if not btn or not btn.GetObjectType then
+        if DEFAULT_CHAT_FRAME then
+            DEFAULT_CHAT_FRAME:AddMessage("|cffff0000[OnePanelUtils]|r Target button not found! Usage: /opbutton [ButtonName] or hover over button.")
+        end
+        return
+    end
+
+    local out = "=== BUTTON INSPECTION: " .. (btn:GetName() or "Anonymous") .. " ===\n"
+    out = out .. string.format("Type: %s\nDimensions: %.1f x %.1f\n", btn:GetObjectType(), btn:GetWidth() or 0, btn:GetHeight() or 0)
+
+    if btn.GetParent then
+        local p = btn:GetParent()
+        out = out .. string.format("Parent: %s\n", p and (p:GetName() or "<Anon>") or "None")
+    end
+
+    -- Check textures and atlases across button states
+    if btn.GetNormalTexture then
+        local states = {
+            {"Normal", btn:GetNormalTexture()},
+            {"Pushed", btn:GetPushedTexture()},
+            {"Highlight", btn:GetHighlightTexture()},
+            {"Disabled", btn:GetDisabledTexture()},
+        }
+
+        out = out .. "\n--- BUTTON STATE TEXTURES ---\n"
+        for _, stateInfo in ipairs(states) do
+            local stateName, tex = stateInfo[1], stateInfo[2]
+            if tex then
+                local atlas = tex.GetAtlas and tex:GetAtlas() or "None"
+                local texturePath = tex.GetTexture and tex:GetTexture() or "None"
+                out = out .. string.format("[%s]\n  Atlas: %s\n  File/ID: %s\n", stateName, tostring(atlas), tostring(texturePath))
+            else
+                out = out .. string.format("[%s] None\n", stateName)
+            end
+        end
+    end
+
+    -- Inspect child regions (overlays, icons, text font strings)
+    if btn.GetRegions then
+        out = out .. "\n--- REGIONS / FONTSTRINGS ---\n"
+        local regions = { btn:GetRegions() }
+        for i, region in ipairs(regions) do
+            local regType = region:GetObjectType()
+            local regName = region:GetName() or ("Region" .. i)
+            if regType == "Texture" then
+                local atlas = region.GetAtlas and region:GetAtlas() or "None"
+                local tex = region.GetTexture and region:GetTexture() or "None"
+                out = out .. string.format("Texture [%s]: Atlas=%s | File=%s\n", regName, tostring(atlas), tostring(tex))
+            elseif regType == "FontString" then
+                local fontName = region.GetFont and select(1, region:GetFont()) or "None"
+                local fontHeight = region.GetFont and select(2, region:GetFont()) or 0
+                local txt = region.GetText and region:GetText() or ""
+                out = out .. string.format("FontString [%s]: Text='%s' | Font=%s (%.1f pt)\n", regName, txt, tostring(fontName), fontHeight or 0)
+            end
+        end
+    end
+
+    local dialog = CreateCopyDialog()
+    dialog.editBox:SetText(out)
+    dialog:Show()
+    dialog.editBox:SetFocus()
+    dialog.editBox:HighlightText()
+end
+
 -------------------------------------------------------------------------------
 -- Initialization & Event Handling
 -------------------------------------------------------------------------------
