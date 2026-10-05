@@ -1,10 +1,52 @@
 --[[
     OnePanelUtils - FrameHelper.lua
-    Frame lifecycle, reparenting, strata harmonization, BackdropTemplate helpers, and Esc handling.
+    Frame lifecycle, reparenting, strata harmonization, BackdropTemplate helpers, Esc handling, and class icon helpers.
 --]]
 
 local Utils = _G.OnePanelUtils or select(2, ...)
 local FrameHelper = {}
+
+-- Fallback Class Icon Coordinates for UI-Classes-Circles texture
+local FallbackClassCoords = {
+    ["WARRIOR"]     = {0, 0.25, 0, 0.25},
+    ["MAGE"]        = {0.25, 0.5, 0, 0.25},
+    ["ROGUE"]       = {0.5, 0.75, 0, 0.25},
+    ["DRUID"]       = {0.75, 1.0, 0, 0.25},
+    ["HUNTER"]      = {0, 0.25, 0.25, 0.5},
+    ["SHAMAN"]      = {0.25, 0.5, 0.25, 0.5},
+    ["PRIEST"]      = {0.5, 0.75, 0.25, 0.5},
+    ["WARLOCK"]     = {0.75, 1.0, 0.25, 0.5},
+    ["PALADIN"]     = {0, 0.25, 0.5, 0.75},
+    ["DEATHKNIGHT"] = {0.25, 0.5, 0.5, 0.75},
+    ["MONK"]        = {0.5, 0.75, 0.5, 0.75},
+    ["DEMONHUNTER"] = {0.75, 1.0, 0.5, 0.75},
+    ["EVOKER"]      = {0, 0.25, 0.75, 1.0},
+}
+
+-------------------------------------------------------------------------------
+-- Class Icon Helper
+-------------------------------------------------------------------------------
+
+--- Set a texture frame to display a unit's circular class icon
+-- @param texture Texture: Target texture object
+-- @param classFile string|nil: Class filename (e.g. "DRUID", "WARRIOR"); defaults to player class
+function FrameHelper:SetClassIcon(texture, classFile)
+    if not texture or type(texture) ~= "table" then return end
+    
+    if not classFile then
+        classFile = select(2, UnitClass("player"))
+    end
+    classFile = (classFile or "WARRIOR"):upper()
+    
+    texture:SetTexture("Interface\\TargetingFrame\\UI-Classes-Circles")
+    
+    local coords = (CLASS_ICON_TCOORDS and CLASS_ICON_TCOORDS[classFile]) or FallbackClassCoords[classFile]
+    if coords then
+        texture:SetTexCoord(unpack(coords))
+    else
+        texture:SetTexCoord(0, 0.25, 0, 0.25)
+    end
+end
 
 -------------------------------------------------------------------------------
 -- Frame Reparenting & Anchoring Helpers
@@ -90,7 +132,7 @@ end
 -- @param frameOrName Frame|string: Frame instance or frame global name string
 function FrameHelper:UnregisterEscClose(frameOrName)
     local frameName = type(frameOrName) == "table" and frameOrName:GetName() or frameOrName
-    if type(frameName) ~= "string" then return end
+    if type(frameName) ~= "string" then end
     
     for i, name in ipairs(UISpecialFrames) do
         if name == frameName then
