@@ -1,6 +1,7 @@
 --[[
     OnePanelUtils - Core.lua
-    Core initialization, module registry, and global namespace management for OnePanel Suite.
+    Core initialization, module registry, global namespace management,
+    and persistent copy dialog frame inspector dump (/opdump) for OnePanel Suite.
 --]]
 
 local addonName, addonTable = ...
@@ -50,6 +51,179 @@ end
 -- @return table|nil: The requested module or nil if not found
 function Utils:GetModule(moduleName)
     return self.Modules[moduleName]
+end
+
+-------------------------------------------------------------------------------
+-- Persistent Frame Inspection & Copy Tool (/opdump)
+-------------------------------------------------------------------------------
+
+local function CreateCopyDialog()
+    if _G.OnePanelCopyDialog then return _G.OnePanelCopyDialog end
+    
+    local copyBox = CreateFrame("Frame", "OnePanelCopyDialog", UIParent, "DialogBoxFrame")
+    copyBox:SetSize(640, 520)
+    copyBox:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+    copyBox:SetFrameStrata("FULLSCREEN_DIALOG")
+    copyBox:SetToplevel(true)
+    copyBox:SetMovable(true)
+    copyBox:EnableMouse(true)
+    copyBox:RegisterForDrag("LeftButton")
+    copyBox:SetScript("OnDragStart", copyBox.StartMoving)
+    copyBox:SetScript("OnDragStop", copyBox.StopMovingOrSizing)
+    copyBox:Hide()
+    
+    local title = copyBox:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    title:SetPoint("TOPLEFT", copyBox, "TOPLEFT", 16, -14)
+    title:SetText("|cffffd100OnePanel Frame Inspector Dump (/opdump)|r")
+    
+    local sf = CreateFrame("ScrollFrame", "OnePanelCopyDialogScrollFrame", copyBox, "UIPanelScrollFrameTemplate")
+    sf:SetPoint("TOPLEFT", 16, -36)
+    sf:SetPoint("BOTTOMRIGHT", -36, 42)
+    
+    local eb = CreateFrame("EditBox", "OnePanelCopyDialogEditBox", sf)
+    eb:SetMultiLine(true)
+    eb:SetFontObject(ChatFontSmall)
+    eb:SetWidth(560)
+    eb:SetAutoFocus(false)
+    eb:SetScript("OnEscapePressed", function() copyBox:Hide() end)
+    sf:SetScrollChild(eb)
+    copyBox.editBox = eb
+    
+    local closeBtn = CreateFrame("Button", nil, copyBox, "UIPanelButtonTemplate")
+    closeBtn:SetSize(90, 22)
+    closeBtn:SetPoint("BOTTOMRIGHT", copyBox, "BOTTOMRIGHT", -16, 12)
+    closeBtn:SetText("Close")
+    closeBtn:SetScript("OnClick", function() copyBox:Hide() end)
+    
+    local selectBtn = CreateFrame("Button", nil, copyBox, "UIPanelButtonTemplate")
+    selectBtn:SetSize(140, 22)
+    selectBtn:SetPoint("BOTTOMRIGHT", closeBtn, "BOTTOMLEFT", -8, 0)
+    selectBtn:SetText("Select All (Cmd+C)")
+    selectBtn:SetScript("OnClick", function()
+        eb:SetFocus()
+        eb:HighlightText()
+    end)
+    
+    if table and table.insert and UISpecialFrames then
+        table.insert(UISpecialFrames, "OnePanelCopyDialog")
+    end
+    
+    return copyBox
+end
+
+local function DumpFrameDetails(target)
+    if not target then return "Target is nil." end
+    
+    local name = target:GetName() or "Anonymous"
+    local objType = target.GetObjectType and target:GetObjectType() or type(target)
+    
+    local out = string.format("=== DUMP: %s ===\n", name)
+    out = out .. string.format("Type: %s\n", objType)
+    out = out .. string.format("Dimensions: %.1f x %.1f\n", target:GetWidth() or 0, target:GetHeight() or 0)
+    
+    if target.GetParent then
+        local p = target:GetParent()
+        out = out .. string.format("Parent: %s\n", p and (p:GetName() or "<Anon>") or "None")
+    end
+    if target.GetFrameStrata then
+        out = out .. string.format("Strata: %s | Level: %d\n", target:GetFrameStrata() or "nil", target:GetFrameLevel() or 0)
+    end
+    if target.IsShown then
+        out = out .. string.format("IsShown: %s | IsVisible: %s\n", tostring(target:IsShown()), tostring(target:IsVisible()))
+    end
+    
+    -- Anchors / Points
+    out = out .. "\n--- ANCHORS / POINTS ---\n"
+    local numPoints = target.GetNumPoints and target:GetNumPoints() or 0
+    for i = 1, numPoints do
+        local point, relTo, relPoint, x, y = target:GetPoint(i)
+        local relName = relTo and (relTo:GetName() or "<Anon>") or "nil"
+        out = out .. string.format("[%d] %s -> %s:%s (%.1f, %.1f)\n", i, tostring(point), relName, tostring(relPoint), x or 0, y or 0)
+    end
+    
+    -- Sub-regions (Textures & FontStrings)
+    if target.GetRegions then
+        out = out .. "\n--- REGIONS (Textures & FontStrings) ---\n"
+        local regions = { target:GetRegions() }
+        for idx, reg in ipairs(regions) do
+            local regType = reg:GetObjectType()
+            local regName = reg:GetName() or ("Region" .. idx)
+            local layer = reg.GetDrawLayer and reg:GetDrawLayer() or ""
+            
+            if regType == "Texture" then
+                local texPath = reg.GetTexture and reg:GetTexture() or ""
+                local atlas = reg.GetAtlas and reg:GetAtlas() or ""
+                out = out .. string.format("[%d] Texture (%s) Layer:%s | Tex:%s | Atlas:%s | Size:%.1fx%.1f\n",
+                    idx, regName, layer, tostring(texPath), tostring(atlas), reg:GetWidth() or 0, reg:GetHeight() or 0)
+            elseif regType == "FontString" then
+                local txt = reg.GetText and reg:GetText() or ""
+                out = out .. string.format("[%d] FontString (%s) Layer:%s | Text:\"%s\" | Size:%.1fx%.1f\n",
+                    idx, regName, layer, tostring(txt), reg:GetWidth() or 0, reg:GetHeight() or 0)
+            else
+                out = out .. string.format("[%d] %s (%s)\n", idx, regType, regName)
+            end
+        end
+    end
+    
+    -- Child Frames
+    if target.GetChildren then
+        out = out .. "\n--- CHILD FRAMES ---\n"
+        local children = { target:GetChildren() }
+        for idx, child in ipairs(children) do
+            local cName = child:GetName() or "AnonChild"
+            local cType = child:GetObjectType()
+            out = out .. string.format("[%d] %s (%s) Size:%.1fx%.1f\n", idx, cType, cName, child:GetWidth() or 0, child:GetHeight() or 0)
+        end
+    end
+    
+    -- Key Table Fields & Sub-objects
+    out = out .. "\n--- SUB-ELEMENTS / KEYS ---\n"
+    if type(target) == "table" then
+        for k, v in pairs(target) do
+            local t = type(v)
+            if t == "table" and v.GetObjectType then
+                out = out .. string.format("[%s] => %s (%s)\n", tostring(k), v:GetObjectType(), v:GetName() or "Anon")
+            elseif t == "string" or t == "number" or t == "boolean" then
+                out = out .. string.format("[%s] => %s\n", tostring(k), tostring(v))
+            end
+        end
+    end
+    
+    return out
+end
+
+-- Slash command: /opdump [FrameName] (or hover frame)
+SLASH_ONEPANELDUMP1 = "/opdump"
+SlashCmdList["ONEPANELDUMP"] = function(msg)
+    local frameName = (msg and msg ~= "") and msg:match("^%s*(.-)%s*$") or nil
+    local target = nil
+    
+    if frameName and frameName ~= "" then
+        target = _G[frameName]
+    end
+    
+    if not target then
+        if GetMouseFoci then
+            local foci = GetMouseFoci()
+            target = foci and foci[1]
+        elseif GetMouseFocus then
+            target = GetMouseFocus()
+        end
+    end
+    
+    if not target then
+        if DEFAULT_CHAT_FRAME then
+            DEFAULT_CHAT_FRAME:AddMessage("|cffff0000[OnePanel Dump]|r No target frame found under mouse or with specified global name. Usage: /opdump [FrameName] or hover over frame.")
+        end
+        return
+    end
+    
+    local dialog = CreateCopyDialog()
+    local text = DumpFrameDetails(target)
+    dialog.editBox:SetText(text)
+    dialog:Show()
+    dialog.editBox:SetFocus()
+    dialog.editBox:HighlightText()
 end
 
 -------------------------------------------------------------------------------
