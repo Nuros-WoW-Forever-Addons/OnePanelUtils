@@ -306,6 +306,62 @@ SlashCmdList["ONEPANELBUTTON"] = function(msg)
     dialog.editBox:HighlightText()
 end
 
+-- Slash command: /opbg
+-- Usage: Type /opbg to inspect current race background art and native CharacterFrame background textures
+SLASH_ONEPANELBG1 = "/opbg"
+SlashCmdList["ONEPANELBG"] = function()
+    local raceName, raceFile = UnitRace("player")
+    raceFile = raceFile or "NightElf"
+    
+    local out = "=== RACE & BACKGROUND ART INSPECTION ===\n"
+    out = out .. string.format("Player Race: %s (%s)\n\n", tostring(raceName), tostring(raceFile))
+    
+    out = out .. "--- NATIVE FRAME BACKGROUND REGIONS ---\n"
+    local framesToTest = { "PaperDollFrame", "CharacterFrame", "CharacterFrameLeftPaneHost", "CharacterModelScene" }
+    local foundAny = false
+    
+    for _, fName in ipairs(framesToTest) do
+        local frame = _G[fName]
+        if frame and frame.GetRegions then
+            out = out .. string.format("\nFrame: %s\n", fName)
+            local regions = { frame:GetRegions() }
+            for idx, reg in ipairs(regions) do
+                if reg:GetObjectType() == "Texture" then
+                    local layer = reg:GetDrawLayer() or ""
+                    local tex = reg.GetTexture and reg:GetTexture() or "None"
+                    local atlas = reg.GetAtlas and reg:GetAtlas() or "None"
+                    local w, h = reg:GetWidth() or 0, reg:GetHeight() or 0
+                    out = out .. string.format("  [%d] Layer:%s | Size:%.1fx%.1f | Atlas:%s | Texture:%s\n",
+                        idx, layer, w, h, tostring(atlas), tostring(tex))
+                    foundAny = true
+                end
+            end
+        end
+    end
+    
+    if not foundAny then
+        out = out .. "No native CharacterFrame background textures found directly on tested hosts. Try opening CharacterFrame (C) and typing /opdump PaperDollFrame!\n"
+    end
+    
+    out = out .. "\n--- STANDARD RACE BACKGROUND TEXTURE PATHS ---\n"
+    local testRaces = {
+        "Human", "Dwarf", "NightElf", "Gnome", "Draenei", "Worgen", "Pandaren",
+        "Orc", "Scourge", "Tauren", "Troll", "BloodElf", "Goblin", "Dracthyr", "Earthen"
+    }
+    
+    for _, r in ipairs(testRaces) do
+        local path = "Interface\\PaperDollHeaderFooters\\UI-PaperDoll-Background-" .. r
+        local atlasName = "Character-Background-" .. r
+        out = out .. string.format("%s: Path='%s' | Atlas='%s'\n", r, path, atlasName)
+    end
+
+    local dialog = CreateCopyDialog()
+    dialog.editBox:SetText(out)
+    dialog:Show()
+    dialog.editBox:SetFocus()
+    dialog.editBox:HighlightText()
+end
+
 -------------------------------------------------------------------------------
 -- Initialization & Event Handling
 -------------------------------------------------------------------------------
