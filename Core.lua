@@ -176,6 +176,41 @@ local function DumpFrameDetails(target)
         end
     end
     
+    -- NineSlice & Backdrop Inspection
+    if target.GetBackdrop then
+        local bd = target:GetBackdrop()
+        if bd then
+            out = out .. "\n--- BACKDROP (9-SLICE / BORDER) INFO ---\n"
+            out = out .. string.format("bgFile: %s\nedgeFile: %s\n", tostring(bd.bgFile), tostring(bd.edgeFile))
+            out = out .. string.format("tileSize: %s | edgeSize: %s | tile: %s\n", tostring(bd.tileSize), tostring(bd.edgeSize), tostring(bd.tile))
+            if bd.insets then
+                out = out .. string.format("insets: Left:%s Right:%s Top:%s Bottom:%s\n", tostring(bd.insets.left), tostring(bd.insets.right), tostring(bd.insets.top), tostring(bd.insets.bottom))
+            end
+        end
+    end
+
+    local ns = target.NineSlice or (type(target) == "table" and target.NineSliceLayout)
+    if ns or (type(target) == "table" and target.layoutType) then
+        out = out .. "\n--- NINESLICE PIECES & ATLASES ---\n"
+        if type(target) == "table" and target.layoutType then
+            out = out .. string.format("LayoutType: %s\n", tostring(target.layoutType))
+        end
+        if type(ns) == "table" then
+            if ns.layoutType then
+                out = out .. string.format("NineSlice LayoutType: %s\n", tostring(ns.layoutType))
+            end
+            local pieces = { "TopLeftCorner", "TopRightCorner", "BottomLeftCorner", "BottomRightCorner", "TopEdge", "BottomEdge", "LeftEdge", "RightEdge", "Center" }
+            for _, pieceName in ipairs(pieces) do
+                local piece = ns[pieceName]
+                if piece and piece.GetObjectType and piece:GetObjectType() == "Texture" then
+                    local atlas = piece.GetAtlas and piece:GetAtlas() or "None"
+                    local tex = piece.GetTexture and piece:GetTexture() or "None"
+                    out = out .. string.format("Piece [%s]: Atlas=%s | File=%s\n", pieceName, tostring(atlas), tostring(tex))
+                end
+            end
+        end
+    end
+
     -- Key Table Fields & Sub-objects
     out = out .. "\n--- SUB-ELEMENTS / KEYS ---\n"
     if type(target) == "table" then
@@ -297,97 +332,6 @@ SlashCmdList["ONEPANELBUTTON"] = function(msg)
                 out = out .. string.format("FontString [%s]: Text='%s' | Font=%s (%.1f pt)\n", regName, txt, tostring(fontName), fontHeight or 0)
             end
         end
-    end
-
-    local dialog = CreateCopyDialog()
-    dialog.editBox:SetText(out)
-    dialog:Show()
-    dialog.editBox:SetFocus()
-    dialog.editBox:HighlightText()
-end
-
--- Slash command: /opbg
--- Slash command: /opbg
--- Usage: Type /opbg to inspect current race background art and native CharacterFrame background textures
-SLASH_ONEPANELBG1 = "/opbg"
-SlashCmdList["ONEPANELBG"] = function()
-    local raceName, raceFile = UnitRace("player")
-    local factionGroup = UnitFactionGroup("player")
-    raceFile = raceFile or "NightElf"
-    
-    local out = "=== RACE & BACKGROUND ART INSPECTION ===\n"
-    out = out .. string.format("Player Race: %s (%s) | Faction: %s\n\n", tostring(raceName), tostring(raceFile), tostring(factionGroup))
-    
-    out = out .. "--- RECURSIVE NATIVE FRAME BACKGROUND SCAN ---\n"
-    local framesToTest = { "PaperDollFrame", "CharacterFrame", "CharacterFrameLeftPaneHost", "CharacterModelScene" }
-    
-    local function ScanFrameTextures(frame, depth, frameLabel)
-        if not frame or depth > 3 then return "" end
-        local result = ""
-        local fName = frame:GetName() or frameLabel or "<AnonFrame>"
-        
-        if frame.GetRegions then
-            local regions = { frame:GetRegions() }
-            for idx, reg in ipairs(regions) do
-                if reg:GetObjectType() == "Texture" then
-                    local layer = reg:GetDrawLayer() or ""
-                    local tex = reg.GetTexture and reg:GetTexture() or "None"
-                    local atlas = reg.GetAtlas and reg:GetAtlas() or "None"
-                    local w, h = reg:GetWidth() or 0, reg:GetHeight() or 0
-                    result = result .. string.format("  [%s -> Region %d] Layer:%s | Size:%.1fx%.1f | Atlas:%s | Texture:%s\n",
-                        fName, idx, layer, w, h, tostring(atlas), tostring(tex))
-                end
-            end
-        end
-        
-        -- Check internal key fields (e.g. Background, BackgroundTexture, Vignette)
-        if type(frame) == "table" then
-            for k, v in pairs(frame) do
-                if (k == "Background" or k == "BackgroundTexture" or k == "bg" or k == "bgTexture") and type(v) == "table" and v.GetObjectType and v:GetObjectType() == "Texture" then
-                    local atlas = v.GetAtlas and v:GetAtlas() or "None"
-                    local tex = v.GetTexture and v:GetTexture() or "None"
-                    result = result .. string.format("  [%s.%s] Atlas:%s | Texture:%s\n", fName, tostring(k), tostring(atlas), tostring(tex))
-                end
-            end
-        end
-        
-        if frame.GetChildren then
-            local children = { frame:GetChildren() }
-            for idx, child in ipairs(children) do
-                local cLabel = string.format("%s.Child%d(%s)", fName, idx, child:GetName() or child:GetObjectType())
-                result = result .. ScanFrameTextures(child, depth + 1, cLabel)
-            end
-        end
-        return result
-    end
-    
-    local scanOutput = ""
-    for _, fName in ipairs(framesToTest) do
-        local frame = _G[fName]
-        if frame then
-            scanOutput = scanOutput .. ScanFrameTextures(frame, 1, fName)
-        end
-    end
-    
-    if scanOutput ~= "" then
-        out = out .. scanOutput
-    else
-        out = out .. "No native CharacterFrame textures found. Please open standard CharacterFrame (C) first, then run /opbg!\n"
-    end
-    
-    out = out .. "\n--- COMMON RACE BACKGROUND PATH & ATLAS CANDIDATES ---\n"
-    local candidates = {
-        "Character-Background-" .. raceFile,
-        "UI-PaperDoll-Background-" .. raceFile,
-        "UI-Character-Info-Background-" .. raceFile,
-        "paperdoll-background-" .. raceFile:lower(),
-        "Interface\\PaperDollHeaderFooters\\UI-PaperDoll-Background-" .. raceFile,
-        "Interface\\PaperDoll\\UI-PaperDoll-Background-" .. raceFile,
-        "Interface\\DressUpFrame\\DressUpBackground-" .. raceFile,
-    }
-    
-    for idx, cand in ipairs(candidates) do
-        out = out .. string.format("[%d] %s\n", idx, cand)
     end
 
     local dialog = CreateCopyDialog()
