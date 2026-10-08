@@ -254,18 +254,25 @@ FrameHelper.ThemeConfigs = {
         brX = 1, brY = -5,
         
         -- TopEdge
-        teCoords = { 0, 1, 123/512, 133/512 },
+        teCoords = { 0, 1, 124/512, 133/512 },
         teH = 11,
         teY = -12,
         teLeftX = 0,
         teRightX = 0,
         
         -- Header Divider (Bottom bar of double top header)
-        hdCoords = { 0, 1, 148/512, 157/512 },
+        hdCoords = { 0, 1, 149/512, 157/512 },
         hdH = 9,
         hdY = -32,
         hdLeftX = 0,
         hdRightX = 0,
+        
+        -- Vertical Divider (between main panel and side panel)
+        vdCoords = { 258/512, 265/512, 0, 1 },
+        vdW = 7,
+        vdX = 1,
+        vdTopY = 10,
+        vdBotY = -14,
         
         -- BottomEdge
         beCoords = { 0, 1, 167/512, 178/512 },
@@ -331,6 +338,13 @@ FrameHelper.ThemeConfigs = {
         hdLeftX = -8,
         hdRightX = 8,
         
+        -- Vertical Divider
+        vdCoords = { 19/64, 37/64, 0, 1 },
+        vdW = 9,
+        vdX = 1,
+        vdTopY = 10,
+        vdBotY = -14,
+        
         beCoords = { 0, 1, 71/128, 89/128 },
         beH = 9,
         beY = 0,
@@ -381,7 +395,7 @@ function FrameHelper:ApplyHiResFrame(frame, options)
         local bg = frame:CreateTexture(nil, "BACKGROUND", nil, -5)
         bg:SetHorizTile(true)
         bg:SetVertTile(true)
-        bg:SetPoint("TOPLEFT", frame, "TOPLEFT", 6, -20)
+        bg:SetPoint("TOPLEFT", frame, "TOPLEFT", 6, -10)
         bg:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -6, 6)
         frame.Bg = bg
     end
@@ -554,10 +568,12 @@ function FrameHelper:ApplyHiResFrame(frame, options)
     if frame.TitleContainer then
         frame.TitleContainer:ClearAllPoints()
         frame.TitleContainer:SetPoint("TOPLEFT", frame, "TOPLEFT", 60, cfg.teY or -12)
-        frame.TitleContainer:SetPoint("BOTTOMRIGHT", frame, "TOPRIGHT", -38, cfg.hdY or -32)
+        frame.TitleContainer:SetPoint("BOTTOMRIGHT", frame, "TOPRIGHT", -38, (cfg.hdY or -32) + (cfg.hdH or 9))
         frame.TitleContainer:SetFrameLevel(border:GetFrameLevel() + 2)
         frame.TitleContainer:Show()
         if frame.TitleContainer.TitleText then
+            frame.TitleContainer.TitleText:ClearAllPoints()
+            frame.TitleContainer.TitleText:SetPoint("CENTER", frame.TitleContainer, "CENTER", 0, 0)
             frame.TitleContainer.TitleText:Show()
         end
     elseif frame.TitleText then
@@ -565,6 +581,18 @@ function FrameHelper:ApplyHiResFrame(frame, options)
         frame.TitleText:SetPoint("CENTER", frame, "TOP", 0, ((cfg.teY or -12) + (cfg.hdY or -32)) / 2)
         frame.TitleText:SetDrawLayer("OVERLAY", 3)
         frame.TitleText:Show()
+    end
+    
+    -- Update Character Vertical Divider if present
+    local vDivider = _G["OnePanel_CharacterVerticalDivider"] or (frame and frame.CharacterVerticalDivider)
+    local leftArea = _G["OnePanel_CharacterLeftArea"]
+    if vDivider and leftArea and cfg.vdCoords then
+        vDivider:SetTexture(cfg.vertFile)
+        vDivider:SetTexCoord(unpack(cfg.vdCoords))
+        vDivider:SetWidth(cfg.vdW or 7)
+        vDivider:ClearAllPoints()
+        vDivider:SetPoint("TOP", leftArea, "TOPRIGHT", cfg.vdX or 1, cfg.vdTopY or 10)
+        vDivider:SetPoint("BOTTOM", leftArea, "BOTTOMRIGHT", cfg.vdX or 1, cfg.vdBotY or -14)
     end
 end
 
