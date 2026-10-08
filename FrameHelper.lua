@@ -221,71 +221,144 @@ function FrameHelper:AttachTitleBar(frame, titleText)
 end
 
 -------------------------------------------------------------------------------
--- HiRes Frame Art Theme (UIFrameHiRes Metal Slices)
+-- Metal & HiRes Frame Art Theme (UIFrameMetal / UIFrameHiRes)
 -------------------------------------------------------------------------------
 
-FrameHelper.HiResOffsets = {
-    topEdgeY     = -18,
-    leftEdgeX    = 17,
-    bottomLeftX  = -11,
-    portraitSize = 60,
-    portraitX    = 6,
-    portraitY    = -7,
-    closeX       = -20,
-    closeY       = -20,
+FrameHelper.CurrentTheme = "Metal"
+
+FrameHelper.ThemeConfigs = {
+    ["Metal"] = {
+        name        = "Metal (1x Standard)",
+        cornersFile = "Interface\\FrameGeneral\\UIFrameMetal",
+        horizFile   = "Interface\\FrameGeneral\\UIFrameMetalHorizontal",
+        vertFile    = "Interface\\FrameGeneral\\UIFrameMetalVertical",
+        
+        -- TopLeft (Portrait Ring)
+        tlCoords = { 136/512, 267/512, 136/512, 267/512 },
+        tlW = 132, tlH = 132,
+        tlX = -16, tlY = 16,
+        
+        -- TopRight (Close Button Box)
+        trCoords = { 0, 131/512, 148/512, 267/512 },
+        trW = 132, trH = 120,
+        trX = 0, trY = 2,
+        
+        -- BottomLeft
+        blCoords = { 10/512, 50/512, 80/512, 132/512 },
+        blW = 40, blH = 52,
+        blX = -16, blY = -8,
+        
+        -- BottomRight
+        brCoords = { 220/512, 266/512, 80/512, 132/512 },
+        brW = 46, brH = 52,
+        brX = 0, brY = -8,
+        
+        -- TopEdge
+        teCoords = { 0, 1, 123/512, 133/512 },
+        teH = 11,
+        teY = -12,
+        teLeftX = 0,
+        teRightX = 0,
+        
+        -- BottomEdge
+        beCoords = { 0, 1, 167/512, 178/512 },
+        beH = 12,
+        beY = 0,
+        beLeftX = 0,
+        beRightX = 0,
+        
+        -- LeftEdge
+        leCoords = { 11/512, 18/512, 0, 1 },
+        leW = 7,
+        leX = 14,
+        leTopY = 0,
+        leBotY = 0,
+        
+        -- RightEdge
+        reCoords = { 258/512, 265/512, 0, 1 },
+        reW = 7,
+        reX = 0,
+        reTopY = 0,
+        reBotY = 0,
+        
+        -- Portrait Center
+        portraitX = -1,
+        portraitY = 1,
+        portraitSize = 60,
+        
+        -- Close Button Center
+        closeX = -13.5,
+        closeY = -13.5,
+    },
+    ["HiRes"] = {
+        name        = "HiRes (2x Scaled)",
+        cornersFile = "Interface\\FrameGeneral\\UIFrameHiRes",
+        horizFile   = "Interface\\FrameGeneral\\UIFrameHiResHorizontal",
+        vertFile    = "Interface\\FrameGeneral\\UIFrameHiResVertical",
+        
+        tlCoords = { 0, 237/512, 0, 243/256 },
+        tlW = 118.5, tlH = 121.5,
+        tlX = -14, tlY = 18,
+        
+        trCoords = { 237/512, 390/512, 4/256, 139/256 },
+        trW = 76.5, trH = 67.5,
+        trX = 4, trY = 18,
+        
+        blCoords = { 446/512, 492/512, 0, 50/256 },
+        blW = 23, blH = 25,
+        blX = -11, blY = -8,
+        
+        brCoords = { 394/512, 442/512, 0, 50/256 },
+        brW = 24, brH = 25,
+        brX = 4, brY = -8,
+        
+        teCoords = { 0, 1, 0, 18/128 },
+        teH = 9,
+        teY = 3,
+        teLeftX = -8,
+        teRightX = 8,
+        
+        beCoords = { 0, 1, 71/128, 89/128 },
+        beH = 9,
+        beY = 0,
+        beLeftX = 0,
+        beRightX = 0,
+        
+        leCoords = { 0, 18/64, 0, 1 },
+        leW = 9,
+        leX = 12,
+        leTopY = 0,
+        leBotY = 0,
+        
+        reCoords = { 19/64, 37/64, 0, 1 },
+        reW = 9,
+        reX = 0,
+        reTopY = 0,
+        reBotY = 0,
+        
+        portraitX = 1,
+        portraitY = -7,
+        portraitSize = 60,
+        
+        closeX = -15,
+        closeY = -15,
+    }
 }
 
---- Re-apply live alignment offsets to an active HiRes frame
--- @param frame Frame: Target frame
-function FrameHelper:UpdateHiResAlignment(frame)
-    if not frame or not frame.HiResBorder then return end
-    local border = frame.HiResBorder
-    local o = self.HiResOffsets
-    
-    if border.TopEdge and border.TopLeft and border.TopRight then
-        border.TopEdge:ClearAllPoints()
-        border.TopEdge:SetPoint("TOPLEFT", border.TopLeft, "TOPRIGHT", -8, o.topEdgeY)
-        border.TopEdge:SetPoint("TOPRIGHT", border.TopRight, "TOPLEFT", 8, o.topEdgeY)
-    end
-    
-    if border.BottomLeft then
-        border.BottomLeft:ClearAllPoints()
-        border.BottomLeft:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", o.bottomLeftX, -8)
-    end
-    
-    if border.LeftEdge and border.TopLeft and border.BottomLeft then
-        border.LeftEdge:ClearAllPoints()
-        border.LeftEdge:SetPoint("TOPLEFT", border.TopLeft, "BOTTOMLEFT", o.leftEdgeX, 0)
-        border.LeftEdge:SetPoint("BOTTOMLEFT", border.BottomLeft, "TOPLEFT", 0, 0)
-    end
-    
-    if frame.PortraitContainer then
-        frame.PortraitContainer:ClearAllPoints()
-        frame.PortraitContainer:SetPoint("TOPLEFT", frame, "TOPLEFT", o.portraitX, o.portraitY)
-        frame.PortraitContainer:SetSize(o.portraitSize, o.portraitSize)
-        if frame.PortraitContainer.portrait then
-            frame.PortraitContainer.portrait:ClearAllPoints()
-            frame.PortraitContainer.portrait:SetAllPoints(frame.PortraitContainer)
-        end
-    end
-    
-    if frame.CloseButton and border.TopRight then
-        frame.CloseButton:ClearAllPoints()
-        frame.CloseButton:SetPoint("CENTER", border.TopRight, "TOPRIGHT", o.closeX, o.closeY)
-    end
-end
-
---- Apply high-resolution custom Blizzard metal frame art using UIFrameHiRes slices
+--- Apply custom Blizzard metal frame art using selected theme config
 -- @param frame Frame: The parent or host frame (e.g. OnePanelFrame)
--- @param options table|nil: Optional customization table { hasPortrait = true, bgTexture = ... }
+-- @param options table|nil: Optional customization table { theme = "Metal"|"HiRes", bgTexture = ... }
 function FrameHelper:ApplyHiResFrame(frame, options)
     if not frame then return end
     options = options or {}
     
-    local bgTexPath = options.bgTexture or "Interface\\FrameGeneral\\UI-Background-Rock"
-    local o = self.HiResOffsets
+    local themeKey = options.theme or self.CurrentTheme or "Metal"
+    local cfg = self.ThemeConfigs[themeKey] or self.ThemeConfigs["Metal"]
+    self.CurrentTheme = themeKey
     
-    -- If native NineSlice exists, hide it so our HiRes textures take over
+    local bgTexPath = options.bgTexture or "Interface\\FrameGeneral\\UI-Background-Rock"
+    
+    -- Hide Blizzard native NineSlice
     if frame.NineSlice then
         frame.NineSlice:Hide()
     end
@@ -297,14 +370,8 @@ function FrameHelper:ApplyHiResFrame(frame, options)
         border:SetFrameLevel(math.max(1, frame:GetFrameLevel()))
         frame.HiResBorder = border
         
-        -- Textures definition
-        local CORNERS_FILE = "Interface\\FrameGeneral\\UIFrameHiRes"
-        local HORIZ_FILE   = "Interface\\FrameGeneral\\UIFrameHiResHorizontal"
-        local VERT_FILE    = "Interface\\FrameGeneral\\UIFrameHiResVertical"
-        
         -- 1. Background / Center Fill
         local bg = border:CreateTexture(nil, "BACKGROUND")
-        bg:SetTexture(bgTexPath)
         bg:SetHorizTile(true)
         bg:SetVertTile(true)
         bg:SetPoint("TOPLEFT", frame, "TOPLEFT", 6, -20)
@@ -313,84 +380,103 @@ function FrameHelper:ApplyHiResFrame(frame, options)
         
         -- 2. Top-Left Corner (Portrait Ring)
         local tl = border:CreateTexture(nil, "OVERLAY", nil, 2)
-        tl:SetTexture(CORNERS_FILE)
-        tl:SetTexCoord(0, 237/512, 0, 243/256)
-        tl:SetSize(118.5, 121.5)
-        tl:SetPoint("TOPLEFT", frame, "TOPLEFT", -14, 18)
         border.TopLeft = tl
         
         -- 3. Top-Right Corner (Close Button Box)
         local tr = border:CreateTexture(nil, "OVERLAY", nil, 2)
-        tr:SetTexture(CORNERS_FILE)
-        tr:SetTexCoord(237/512, 390/512, 4/256, 139/256)
-        tr:SetSize(76.5, 67.5)
-        tr:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 4, 18)
         border.TopRight = tr
         
         -- 4. Bottom-Left Corner
         local bl = border:CreateTexture(nil, "OVERLAY", nil, 2)
-        bl:SetTexture(CORNERS_FILE)
-        bl:SetTexCoord(446/512, 492/512, 0, 50/256)
-        bl:SetSize(23, 25)
-        bl:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", o.bottomLeftX, -8)
         border.BottomLeft = bl
         
         -- 5. Bottom-Right Corner
         local br = border:CreateTexture(nil, "OVERLAY", nil, 2)
-        br:SetTexture(CORNERS_FILE)
-        br:SetTexCoord(394/512, 442/512, 0, 50/256)
-        br:SetSize(24, 25)
-        br:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 4, -8)
         border.BottomRight = br
         
         -- 6. Top Edge (Horizontally Tiling)
         local te = border:CreateTexture(nil, "OVERLAY", nil, 1)
-        te:SetTexture(HORIZ_FILE)
-        te:SetTexCoord(0, 1, 0, 18/128)
         te:SetHorizTile(true)
-        te:SetHeight(9)
-        te:SetPoint("TOPLEFT", tl, "TOPRIGHT", -8, o.topEdgeY)
-        te:SetPoint("TOPRIGHT", tr, "TOPLEFT", 8, o.topEdgeY)
         border.TopEdge = te
         
         -- 7. Bottom Edge (Horizontally Tiling)
         local be = border:CreateTexture(nil, "OVERLAY", nil, 1)
-        be:SetTexture(HORIZ_FILE)
-        be:SetTexCoord(0, 1, 71/128, 89/128)
         be:SetHorizTile(true)
-        be:SetHeight(9)
-        be:SetPoint("BOTTOMLEFT", bl, "BOTTOMRIGHT", 0, 0)
-        be:SetPoint("BOTTOMRIGHT", br, "BOTTOMLEFT", 0, 0)
         border.BottomEdge = be
         
         -- 8. Left Edge (Vertically Tiling)
         local le = border:CreateTexture(nil, "OVERLAY", nil, 1)
-        le:SetTexture(VERT_FILE)
-        le:SetTexCoord(0, 18/64, 0, 1)
         le:SetVertTile(true)
-        le:SetWidth(9)
-        le:SetPoint("TOPLEFT", tl, "BOTTOMLEFT", o.leftEdgeX, 0)
-        le:SetPoint("BOTTOMLEFT", bl, "TOPLEFT", 0, 0)
         border.LeftEdge = le
         
         -- 9. Right Edge (Vertically Tiling)
         local re = border:CreateTexture(nil, "OVERLAY", nil, 1)
-        re:SetTexture(VERT_FILE)
-        re:SetTexCoord(19/64, 37/64, 0, 1)
         re:SetVertTile(true)
-        re:SetWidth(9)
-        re:SetPoint("TOPRIGHT", tr, "BOTTOMRIGHT", 0, 0)
-        re:SetPoint("BOTTOMRIGHT", br, "TOPRIGHT", 0, 0)
         border.RightEdge = re
     end
+    
+    -- Update Textures & Coordinates from active theme config
+    border.Bg:SetTexture(bgTexPath)
+    
+    border.TopLeft:SetTexture(cfg.cornersFile)
+    border.TopLeft:SetTexCoord(unpack(cfg.tlCoords))
+    border.TopLeft:ClearAllPoints()
+    border.TopLeft:SetPoint("TOPLEFT", frame, "TOPLEFT", cfg.tlX, cfg.tlY)
+    border.TopLeft:SetSize(cfg.tlW, cfg.tlH)
+    
+    border.TopRight:SetTexture(cfg.cornersFile)
+    border.TopRight:SetTexCoord(unpack(cfg.trCoords))
+    border.TopRight:ClearAllPoints()
+    border.TopRight:SetPoint("TOPRIGHT", frame, "TOPRIGHT", cfg.trX, cfg.trY)
+    border.TopRight:SetSize(cfg.trW, cfg.trH)
+    
+    border.BottomLeft:SetTexture(cfg.cornersFile)
+    border.BottomLeft:SetTexCoord(unpack(cfg.blCoords))
+    border.BottomLeft:ClearAllPoints()
+    border.BottomLeft:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", cfg.blX, cfg.blY)
+    border.BottomLeft:SetSize(cfg.blW, cfg.blH)
+    
+    border.BottomRight:SetTexture(cfg.cornersFile)
+    border.BottomRight:SetTexCoord(unpack(cfg.brCoords))
+    border.BottomRight:ClearAllPoints()
+    border.BottomRight:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", cfg.brX, cfg.brY)
+    border.BottomRight:SetSize(cfg.brW, cfg.brH)
+    
+    border.TopEdge:SetTexture(cfg.horizFile)
+    border.TopEdge:SetTexCoord(unpack(cfg.teCoords))
+    border.TopEdge:ClearAllPoints()
+    border.TopEdge:SetPoint("TOPLEFT", border.TopLeft, "TOPRIGHT", cfg.teLeftX or -8, cfg.teY)
+    border.TopEdge:SetPoint("TOPRIGHT", border.TopRight, "TOPLEFT", cfg.teRightX or 8, cfg.teY)
+    border.TopEdge:SetHeight(cfg.teH)
+    
+    border.BottomEdge:SetTexture(cfg.horizFile)
+    border.BottomEdge:SetTexCoord(unpack(cfg.beCoords))
+    border.BottomEdge:ClearAllPoints()
+    border.BottomEdge:SetPoint("BOTTOMLEFT", border.BottomLeft, "BOTTOMRIGHT", cfg.beLeftX or 0, cfg.beY)
+    border.BottomEdge:SetPoint("BOTTOMRIGHT", border.BottomRight, "BOTTOMLEFT", cfg.beRightX or 0, cfg.beY)
+    border.BottomEdge:SetHeight(cfg.beH)
+    
+    border.LeftEdge:SetTexture(cfg.vertFile)
+    border.LeftEdge:SetTexCoord(unpack(cfg.leCoords))
+    border.LeftEdge:ClearAllPoints()
+    border.LeftEdge:SetPoint("TOPLEFT", border.TopLeft, "BOTTOMLEFT", cfg.leX, cfg.leTopY or 0)
+    border.LeftEdge:SetPoint("BOTTOMLEFT", border.BottomLeft, "TOPLEFT", 0, cfg.leBotY or 0)
+    border.LeftEdge:SetWidth(cfg.leW)
+    
+    border.RightEdge:SetTexture(cfg.vertFile)
+    border.RightEdge:SetTexCoord(unpack(cfg.reCoords))
+    border.RightEdge:ClearAllPoints()
+    border.RightEdge:SetPoint("TOPRIGHT", border.TopRight, "BOTTOMRIGHT", cfg.reX, cfg.reTopY or 0)
+    border.RightEdge:SetPoint("BOTTOMRIGHT", border.BottomRight, "TOPRIGHT", 0, cfg.reBotY or 0)
+    border.RightEdge:SetWidth(cfg.reW)
     
     border:Show()
     
     -- Position Player Portrait inside the gold/steel ring
     if frame.PortraitContainer then
         frame.PortraitContainer:ClearAllPoints()
-        frame.PortraitContainer:SetPoint("TOPLEFT", frame, "TOPLEFT", o.portraitX, o.portraitY)
-        frame.PortraitContainer:SetSize(o.portraitSize, o.portraitSize)
+        frame.PortraitContainer:SetPoint("TOPLEFT", frame, "TOPLEFT", cfg.portraitX, cfg.portraitY)
+        frame.PortraitContainer:SetSize(cfg.portraitSize, cfg.portraitSize)
         frame.PortraitContainer:SetFrameLevel(border:GetFrameLevel() + 1)
         
         if frame.PortraitContainer.portrait then
@@ -410,15 +496,15 @@ function FrameHelper:ApplyHiResFrame(frame, options)
         end
     elseif frame.portrait then
         frame.portrait:ClearAllPoints()
-        frame.portrait:SetPoint("TOPLEFT", frame, "TOPLEFT", o.portraitX, o.portraitY)
-        frame.portrait:SetSize(o.portraitSize, o.portraitSize)
+        frame.portrait:SetPoint("TOPLEFT", frame, "TOPLEFT", cfg.portraitX, cfg.portraitY)
+        frame.portrait:SetSize(cfg.portraitSize, cfg.portraitSize)
         frame.portrait:Show()
     end
     
     -- Position Close Button into the beveled recess in TopRight corner
     if frame.CloseButton then
         frame.CloseButton:ClearAllPoints()
-        frame.CloseButton:SetPoint("CENTER", border.TopRight, "TOPRIGHT", o.closeX, o.closeY)
+        frame.CloseButton:SetPoint("CENTER", border.TopRight, "TOPRIGHT", cfg.closeX, cfg.closeY)
         frame.CloseButton:SetFrameLevel(border:GetFrameLevel() + 5)
     end
     
