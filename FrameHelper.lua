@@ -220,5 +220,148 @@ function FrameHelper:AttachTitleBar(frame, titleText)
     return title
 end
 
+-------------------------------------------------------------------------------
+-- HiRes Frame Art Theme (UIFrameHiRes Metal Slices)
+-------------------------------------------------------------------------------
+
+--- Apply high-resolution custom Blizzard metal frame art using UIFrameHiRes slices
+-- @param frame Frame: The parent or host frame (e.g. OnePanelFrame)
+-- @param options table|nil: Optional customization table { hasPortrait = true, bgTexture = ... }
+function FrameHelper:ApplyHiResFrame(frame, options)
+    if not frame then return end
+    options = options or {}
+    
+    local bgTexPath = options.bgTexture or "Interface\\FrameGeneral\\UI-Background-Rock"
+    
+    -- If native NineSlice exists, hide it so our HiRes textures take over
+    if frame.NineSlice then
+        frame.NineSlice:Hide()
+    end
+    
+    local border = frame.HiResBorder
+    if not border then
+        border = CreateFrame("Frame", nil, frame)
+        border:SetAllPoints(frame)
+        border:SetFrameLevel(math.max(1, frame:GetFrameLevel()))
+        frame.HiResBorder = border
+        
+        -- Textures definition
+        local CORNERS_FILE = "Interface\\FrameGeneral\\UIFrameHiRes"
+        local HORIZ_FILE   = "Interface\\FrameGeneral\\UIFrameHiResHorizontal"
+        local VERT_FILE    = "Interface\\FrameGeneral\\UIFrameHiResVertical"
+        
+        -- 1. Background / Center Fill
+        local bg = border:CreateTexture(nil, "BACKGROUND")
+        bg:SetTexture(bgTexPath)
+        bg:SetHorizTile(true)
+        bg:SetVertTile(true)
+        bg:SetPoint("TOPLEFT", frame, "TOPLEFT", 6, -20)
+        bg:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -6, 6)
+        border.Bg = bg
+        
+        -- 2. Top-Left Corner (Portrait Ring)
+        local tl = border:CreateTexture(nil, "OVERLAY")
+        tl:SetTexture(CORNERS_FILE)
+        tl:SetTexCoord(0, 237/512, 0, 243/256)
+        tl:SetSize(118.5, 121.5)
+        tl:SetPoint("TOPLEFT", frame, "TOPLEFT", -14, 18)
+        border.TopLeft = tl
+        
+        -- 3. Top-Right Corner (Close Button Box)
+        local tr = border:CreateTexture(nil, "OVERLAY")
+        tr:SetTexture(CORNERS_FILE)
+        tr:SetTexCoord(237/512, 390/512, 4/256, 139/256)
+        tr:SetSize(76.5, 67.5)
+        tr:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 4, 18)
+        border.TopRight = tr
+        
+        -- 4. Bottom-Left Corner
+        local bl = border:CreateTexture(nil, "OVERLAY")
+        bl:SetTexture(CORNERS_FILE)
+        bl:SetTexCoord(446/512, 492/512, 0, 50/256)
+        bl:SetSize(23, 25)
+        bl:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", -14, -8)
+        border.BottomLeft = bl
+        
+        -- 5. Bottom-Right Corner
+        local br = border:CreateTexture(nil, "OVERLAY")
+        br:SetTexture(CORNERS_FILE)
+        br:SetTexCoord(394/512, 442/512, 0, 50/256)
+        br:SetSize(24, 25)
+        br:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 4, -8)
+        border.BottomRight = br
+        
+        -- 6. Top Edge (Horizontally Tiling)
+        local te = border:CreateTexture(nil, "OVERLAY")
+        te:SetTexture(HORIZ_FILE)
+        te:SetTexCoord(0, 1, 0, 18/128)
+        te:SetHorizTile(true)
+        te:SetHeight(9)
+        te:SetPoint("TOPLEFT", tl, "TOPRIGHT", -8, -13)
+        te:SetPoint("TOPRIGHT", tr, "TOPLEFT", 8, -13)
+        border.TopEdge = te
+        
+        -- 7. Bottom Edge (Horizontally Tiling)
+        local be = border:CreateTexture(nil, "OVERLAY")
+        be:SetTexture(HORIZ_FILE)
+        be:SetTexCoord(0, 1, 71/128, 89/128)
+        be:SetHorizTile(true)
+        be:SetHeight(9)
+        be:SetPoint("BOTTOMLEFT", bl, "BOTTOMRIGHT", 0, 0)
+        be:SetPoint("BOTTOMRIGHT", br, "BOTTOMLEFT", 0, 0)
+        border.BottomEdge = be
+        
+        -- 8. Left Edge (Vertically Tiling)
+        local le = border:CreateTexture(nil, "OVERLAY")
+        le:SetTexture(VERT_FILE)
+        le:SetTexCoord(0, 18/64, 0, 1)
+        le:SetVertTile(true)
+        le:SetWidth(9)
+        le:SetPoint("TOPLEFT", tl, "BOTTOMLEFT", 14, 0)
+        le:SetPoint("BOTTOMLEFT", bl, "TOPLEFT", 0, 0)
+        border.LeftEdge = le
+        
+        -- 9. Right Edge (Vertically Tiling)
+        local re = border:CreateTexture(nil, "OVERLAY")
+        re:SetTexture(VERT_FILE)
+        re:SetTexCoord(19/64, 37/64, 0, 1)
+        re:SetVertTile(true)
+        re:SetWidth(9)
+        re:SetPoint("TOPRIGHT", tr, "BOTTOMRIGHT", 0, 0)
+        re:SetPoint("BOTTOMRIGHT", br, "TOPRIGHT", 0, 0)
+        border.RightEdge = re
+    end
+    
+    border:Show()
+    
+    -- Position Player Portrait inside the gold/steel ring
+    local portrait = (frame.PortraitContainer and frame.PortraitContainer.portrait)
+        or frame.portrait
+        or frame.PortraitIcon
+        
+    if portrait then
+        portrait:ClearAllPoints()
+        portrait:SetPoint("CENTER", border.TopLeft, "TOPLEFT", 50, -55)
+        portrait:SetSize(60, 60)
+        portrait:Show()
+    end
+    
+    -- Position Close Button into the beveled recess in TopRight corner
+    if frame.CloseButton then
+        frame.CloseButton:ClearAllPoints()
+        frame.CloseButton:SetPoint("CENTER", border.TopRight, "TOPRIGHT", -16, -16)
+        frame.CloseButton:SetFrameLevel(border:GetFrameLevel() + 5)
+    end
+    
+    -- Position Title Text
+    if frame.TitleContainer and frame.TitleContainer.TitleText then
+        frame.TitleContainer:ClearAllPoints()
+        frame.TitleContainer:SetPoint("TOP", frame, "TOP", 10, -5)
+    elseif frame.TitleText then
+        frame.TitleText:ClearAllPoints()
+        frame.TitleText:SetPoint("TOP", frame, "TOP", 10, -5)
+    end
+end
+
 -- Register module with Core
 Utils:RegisterModule("FrameHelper", FrameHelper)
