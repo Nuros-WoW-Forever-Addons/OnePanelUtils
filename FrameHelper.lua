@@ -224,6 +224,57 @@ end
 -- HiRes Frame Art Theme (UIFrameHiRes Metal Slices)
 -------------------------------------------------------------------------------
 
+FrameHelper.HiResOffsets = {
+    topEdgeY     = -18,
+    leftEdgeX    = 17,
+    bottomLeftX  = -11,
+    portraitSize = 60,
+    portraitX    = 6,
+    portraitY    = -7,
+    closeX       = -20,
+    closeY       = -20,
+}
+
+--- Re-apply live alignment offsets to an active HiRes frame
+-- @param frame Frame: Target frame
+function FrameHelper:UpdateHiResAlignment(frame)
+    if not frame or not frame.HiResBorder then return end
+    local border = frame.HiResBorder
+    local o = self.HiResOffsets
+    
+    if border.TopEdge and border.TopLeft and border.TopRight then
+        border.TopEdge:ClearAllPoints()
+        border.TopEdge:SetPoint("TOPLEFT", border.TopLeft, "TOPRIGHT", -8, o.topEdgeY)
+        border.TopEdge:SetPoint("TOPRIGHT", border.TopRight, "TOPLEFT", 8, o.topEdgeY)
+    end
+    
+    if border.BottomLeft then
+        border.BottomLeft:ClearAllPoints()
+        border.BottomLeft:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", o.bottomLeftX, -8)
+    end
+    
+    if border.LeftEdge and border.TopLeft and border.BottomLeft then
+        border.LeftEdge:ClearAllPoints()
+        border.LeftEdge:SetPoint("TOPLEFT", border.TopLeft, "BOTTOMLEFT", o.leftEdgeX, 0)
+        border.LeftEdge:SetPoint("BOTTOMLEFT", border.BottomLeft, "TOPLEFT", 0, 0)
+    end
+    
+    if frame.PortraitContainer then
+        frame.PortraitContainer:ClearAllPoints()
+        frame.PortraitContainer:SetPoint("TOPLEFT", frame, "TOPLEFT", o.portraitX, o.portraitY)
+        frame.PortraitContainer:SetSize(o.portraitSize, o.portraitSize)
+        if frame.PortraitContainer.portrait then
+            frame.PortraitContainer.portrait:ClearAllPoints()
+            frame.PortraitContainer.portrait:SetAllPoints(frame.PortraitContainer)
+        end
+    end
+    
+    if frame.CloseButton and border.TopRight then
+        frame.CloseButton:ClearAllPoints()
+        frame.CloseButton:SetPoint("CENTER", border.TopRight, "TOPRIGHT", o.closeX, o.closeY)
+    end
+end
+
 --- Apply high-resolution custom Blizzard metal frame art using UIFrameHiRes slices
 -- @param frame Frame: The parent or host frame (e.g. OnePanelFrame)
 -- @param options table|nil: Optional customization table { hasPortrait = true, bgTexture = ... }
@@ -232,6 +283,7 @@ function FrameHelper:ApplyHiResFrame(frame, options)
     options = options or {}
     
     local bgTexPath = options.bgTexture or "Interface\\FrameGeneral\\UI-Background-Rock"
+    local o = self.HiResOffsets
     
     -- If native NineSlice exists, hide it so our HiRes textures take over
     if frame.NineSlice then
@@ -260,7 +312,7 @@ function FrameHelper:ApplyHiResFrame(frame, options)
         border.Bg = bg
         
         -- 2. Top-Left Corner (Portrait Ring)
-        local tl = border:CreateTexture(nil, "OVERLAY")
+        local tl = border:CreateTexture(nil, "OVERLAY", nil, 2)
         tl:SetTexture(CORNERS_FILE)
         tl:SetTexCoord(0, 237/512, 0, 243/256)
         tl:SetSize(118.5, 121.5)
@@ -268,7 +320,7 @@ function FrameHelper:ApplyHiResFrame(frame, options)
         border.TopLeft = tl
         
         -- 3. Top-Right Corner (Close Button Box)
-        local tr = border:CreateTexture(nil, "OVERLAY")
+        local tr = border:CreateTexture(nil, "OVERLAY", nil, 2)
         tr:SetTexture(CORNERS_FILE)
         tr:SetTexCoord(237/512, 390/512, 4/256, 139/256)
         tr:SetSize(76.5, 67.5)
@@ -276,15 +328,15 @@ function FrameHelper:ApplyHiResFrame(frame, options)
         border.TopRight = tr
         
         -- 4. Bottom-Left Corner
-        local bl = border:CreateTexture(nil, "OVERLAY")
+        local bl = border:CreateTexture(nil, "OVERLAY", nil, 2)
         bl:SetTexture(CORNERS_FILE)
         bl:SetTexCoord(446/512, 492/512, 0, 50/256)
         bl:SetSize(23, 25)
-        bl:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", -14, -8)
+        bl:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", o.bottomLeftX, -8)
         border.BottomLeft = bl
         
         -- 5. Bottom-Right Corner
-        local br = border:CreateTexture(nil, "OVERLAY")
+        local br = border:CreateTexture(nil, "OVERLAY", nil, 2)
         br:SetTexture(CORNERS_FILE)
         br:SetTexCoord(394/512, 442/512, 0, 50/256)
         br:SetSize(24, 25)
@@ -292,17 +344,17 @@ function FrameHelper:ApplyHiResFrame(frame, options)
         border.BottomRight = br
         
         -- 6. Top Edge (Horizontally Tiling)
-        local te = border:CreateTexture(nil, "OVERLAY")
+        local te = border:CreateTexture(nil, "OVERLAY", nil, 1)
         te:SetTexture(HORIZ_FILE)
         te:SetTexCoord(0, 1, 0, 18/128)
         te:SetHorizTile(true)
         te:SetHeight(9)
-        te:SetPoint("TOPLEFT", tl, "TOPRIGHT", -8, -13)
-        te:SetPoint("TOPRIGHT", tr, "TOPLEFT", 8, -13)
+        te:SetPoint("TOPLEFT", tl, "TOPRIGHT", -8, o.topEdgeY)
+        te:SetPoint("TOPRIGHT", tr, "TOPLEFT", 8, o.topEdgeY)
         border.TopEdge = te
         
         -- 7. Bottom Edge (Horizontally Tiling)
-        local be = border:CreateTexture(nil, "OVERLAY")
+        local be = border:CreateTexture(nil, "OVERLAY", nil, 1)
         be:SetTexture(HORIZ_FILE)
         be:SetTexCoord(0, 1, 71/128, 89/128)
         be:SetHorizTile(true)
@@ -312,17 +364,17 @@ function FrameHelper:ApplyHiResFrame(frame, options)
         border.BottomEdge = be
         
         -- 8. Left Edge (Vertically Tiling)
-        local le = border:CreateTexture(nil, "OVERLAY")
+        local le = border:CreateTexture(nil, "OVERLAY", nil, 1)
         le:SetTexture(VERT_FILE)
         le:SetTexCoord(0, 18/64, 0, 1)
         le:SetVertTile(true)
         le:SetWidth(9)
-        le:SetPoint("TOPLEFT", tl, "BOTTOMLEFT", 14, 0)
+        le:SetPoint("TOPLEFT", tl, "BOTTOMLEFT", o.leftEdgeX, 0)
         le:SetPoint("BOTTOMLEFT", bl, "TOPLEFT", 0, 0)
         border.LeftEdge = le
         
         -- 9. Right Edge (Vertically Tiling)
-        local re = border:CreateTexture(nil, "OVERLAY")
+        local re = border:CreateTexture(nil, "OVERLAY", nil, 1)
         re:SetTexture(VERT_FILE)
         re:SetTexCoord(19/64, 37/64, 0, 1)
         re:SetVertTile(true)
@@ -335,33 +387,99 @@ function FrameHelper:ApplyHiResFrame(frame, options)
     border:Show()
     
     -- Position Player Portrait inside the gold/steel ring
-    local portrait = (frame.PortraitContainer and frame.PortraitContainer.portrait)
-        or frame.portrait
-        or frame.PortraitIcon
+    if frame.PortraitContainer then
+        frame.PortraitContainer:ClearAllPoints()
+        frame.PortraitContainer:SetPoint("TOPLEFT", frame, "TOPLEFT", o.portraitX, o.portraitY)
+        frame.PortraitContainer:SetSize(o.portraitSize, o.portraitSize)
+        frame.PortraitContainer:SetFrameLevel(border:GetFrameLevel() + 1)
         
-    if portrait then
-        portrait:ClearAllPoints()
-        portrait:SetPoint("CENTER", border.TopLeft, "TOPLEFT", 50, -55)
-        portrait:SetSize(60, 60)
-        portrait:Show()
+        if frame.PortraitContainer.portrait then
+            frame.PortraitContainer.portrait:ClearAllPoints()
+            frame.PortraitContainer.portrait:SetAllPoints(frame.PortraitContainer)
+            frame.PortraitContainer.portrait:Show()
+        end
+        
+        if frame.SetPortraitTextureSizeAndOffset then
+            frame.SetPortraitTextureSizeAndOffset = function(self, size, x, y)
+                local p = self:GetPortrait()
+                if p and frame.PortraitContainer then
+                    p:ClearAllPoints()
+                    p:SetAllPoints(frame.PortraitContainer)
+                end
+            end
+        end
+    elseif frame.portrait then
+        frame.portrait:ClearAllPoints()
+        frame.portrait:SetPoint("TOPLEFT", frame, "TOPLEFT", o.portraitX, o.portraitY)
+        frame.portrait:SetSize(o.portraitSize, o.portraitSize)
+        frame.portrait:Show()
     end
     
     -- Position Close Button into the beveled recess in TopRight corner
     if frame.CloseButton then
         frame.CloseButton:ClearAllPoints()
-        frame.CloseButton:SetPoint("CENTER", border.TopRight, "TOPRIGHT", -16, -16)
+        frame.CloseButton:SetPoint("CENTER", border.TopRight, "TOPRIGHT", o.closeX, o.closeY)
         frame.CloseButton:SetFrameLevel(border:GetFrameLevel() + 5)
     end
     
-    -- Position Title Text
-    if frame.TitleContainer and frame.TitleContainer.TitleText then
+    -- Position Title Text & Container
+    if frame.TitleContainer then
         frame.TitleContainer:ClearAllPoints()
-        frame.TitleContainer:SetPoint("TOP", frame, "TOP", 10, -5)
+        frame.TitleContainer:SetPoint("TOPLEFT", frame, "TOPLEFT", 60, -1)
+        frame.TitleContainer:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -38, -1)
+        frame.TitleContainer:SetHeight(22)
+        frame.TitleContainer:Show()
+        if frame.TitleContainer.TitleText then
+            frame.TitleContainer.TitleText:Show()
+        end
     elseif frame.TitleText then
         frame.TitleText:ClearAllPoints()
         frame.TitleText:SetPoint("TOP", frame, "TOP", 10, -5)
+        frame.TitleText:Show()
     end
 end
+
+-- Slash command for real-time live alignment
+SLASH_ONEPANELALIGN1 = "/opalign"
+SlashCmdList["ONEPANELALIGN"] = function(msg)
+    local cmd, arg1, arg2 = strsplit(" ", msg or "")
+    cmd = (cmd or ""):lower()
+    local o = FrameHelper.HiResOffsets
+    if not o then return end
+    local f = _G["OnePanelFrame"]
+    
+    if cmd == "top" and tonumber(arg1) then
+        o.topEdgeY = tonumber(arg1)
+        FrameHelper:UpdateHiResAlignment(f)
+        print(string.format("|cff00ff00[OnePanel HiRes]|r topEdgeY set to %d", o.topEdgeY))
+    elseif cmd == "left" and tonumber(arg1) then
+        o.leftEdgeX = tonumber(arg1)
+        o.bottomLeftX = o.leftEdgeX - 28
+        FrameHelper:UpdateHiResAlignment(f)
+        print(string.format("|cff00ff00[OnePanel HiRes]|r leftEdgeX set to %d", o.leftEdgeX))
+    elseif cmd == "portrait" and tonumber(arg1) and tonumber(arg2) then
+        o.portraitX = tonumber(arg1)
+        o.portraitY = tonumber(arg2)
+        FrameHelper:UpdateHiResAlignment(f)
+        print(string.format("|cff00ff00[OnePanel HiRes]|r portrait set to (%d, %d)", o.portraitX, o.portraitY))
+    elseif cmd == "close" and tonumber(arg1) and tonumber(arg2) then
+        o.closeX = tonumber(arg1)
+        o.closeY = tonumber(arg2)
+        FrameHelper:UpdateHiResAlignment(f)
+        print(string.format("|cff00ff00[OnePanel HiRes]|r close button set to (%d, %d)", o.closeX, o.closeY))
+    elseif cmd == "print" then
+        print(string.format("|cff00ff00[OnePanel HiRes Offsets]|r topEdgeY=%d, leftEdgeX=%d, portrait=(%d, %d), close=(%d, %d)",
+            o.topEdgeY, o.leftEdgeX, o.portraitX, o.portraitY, o.closeX, o.closeY))
+    else
+        print("|cff00ff00OnePanel HiRes Alignment Commands:|r")
+        print("  /opalign top <y>          (Current: " .. o.topEdgeY .. ")")
+        print("  /opalign left <x>         (Current: " .. o.leftEdgeX .. ")")
+        print("  /opalign portrait <x> <y>   (Current: " .. o.portraitX .. ", " .. o.portraitY .. ")")
+        print("  /opalign close <x> <y>      (Current: " .. o.closeX .. ", " .. o.closeY .. ")")
+        print("  /opalign print            (Prints all current values)")
+    end
+end
+
 
 -- Register module with Core
 Utils:RegisterModule("FrameHelper", FrameHelper)
