@@ -307,6 +307,12 @@ FrameHelper.ThemeConfigs = {
         -- Title Centering
         titleX = 0,
         titleY = -13,
+        
+        -- Background Insets (contained within metal borders)
+        bgLeft = 0,
+        bgRight = -3,
+        bgTop = -3,
+        bgBottom = 0,
     },
     ["HiRes"] = {
         name        = "HiRes (2x Scaled)",
@@ -376,6 +382,11 @@ FrameHelper.ThemeConfigs = {
         
         titleX = 0,
         titleY = -14,
+        
+        bgLeft = 0,
+        bgRight = -3,
+        bgTop = -3,
+        bgBottom = 0,
     }
 }
 
@@ -400,14 +411,14 @@ function FrameHelper:ApplyHiResFrame(frame, options)
         frame.TopTileStreaks:Hide()
     end
     
-    -- 1. Master Background Texture (anchored on frame, spanning entire panel including title bar)
+    -- 1. Master Background Texture (anchored on frame, securely tucked under metal borders)
     if not frame.Bg then
         local bg = frame:CreateTexture(nil, "BACKGROUND", nil, -5)
         frame.Bg = bg
     end
     frame.Bg:ClearAllPoints()
-    frame.Bg:SetPoint("TOPLEFT", frame, "TOPLEFT", -4, 2)
-    frame.Bg:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, -4)
+    frame.Bg:SetPoint("TOPLEFT", frame, "TOPLEFT", cfg.bgLeft or 0, cfg.bgTop or -3)
+    frame.Bg:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", cfg.bgRight or -3, cfg.bgBottom or 0)
     frame.Bg:SetHorizTile(false)
     frame.Bg:SetVertTile(false)
     frame.Bg:SetTexCoord(0, 1, 0, 1)
