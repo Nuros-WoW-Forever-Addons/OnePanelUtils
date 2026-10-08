@@ -439,6 +439,13 @@ function FrameHelper:ApplyHiResFrame(frame, options)
         border.HeaderDivider = hd
     end
     
+    -- Ensure HeaderDivider exists even if border was created prior to its addition
+    if not border.HeaderDivider then
+        local hd = border:CreateTexture(nil, "OVERLAY", nil, 1)
+        hd:SetHorizTile(true)
+        border.HeaderDivider = hd
+    end
+    
     -- Ensure border is at frame level + 10
     border:SetFrameLevel(frame:GetFrameLevel() + 10)
     
