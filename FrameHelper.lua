@@ -235,23 +235,23 @@ FrameHelper.ThemeConfigs = {
         
         -- TopLeft (Portrait Ring)
         tlCoords = { 136/512, 267/512, 136/512, 267/512 },
-        tlW = 132, tlH = 132,
-        tlX = -16, tlY = 16,
+        tlW = 132.0, tlH = 132.0,
+        tlX = -13, tlY = 14,
         
-        -- TopRight (Close Button Box)
-        trCoords = { 0, 131/512, 148/512, 267/512 },
-        trW = 132, trH = 120,
+        -- TopRight (Close Box)
+        trCoords = { 0/512, 131/512, 148/512, 267/512 },
+        trW = 132.0, trH = 120.0,
         trX = 0, trY = 2,
         
         -- BottomLeft
         blCoords = { 10/512, 50/512, 80/512, 132/512 },
         blW = 40, blH = 52,
-        blX = -16, blY = -8,
+        blX = -5, blY = -5,
         
         -- BottomRight
         brCoords = { 220/512, 266/512, 80/512, 132/512 },
         brW = 46, brH = 52,
-        brX = 0, brY = -8,
+        brX = 1, brY = -5,
         
         -- TopEdge
         teCoords = { 0, 1, 123/512, 133/512 },
@@ -260,17 +260,24 @@ FrameHelper.ThemeConfigs = {
         teLeftX = 0,
         teRightX = 0,
         
+        -- Header Divider (Bottom bar of double top header)
+        hdCoords = { 0, 1, 148/512, 157/512 },
+        hdH = 9,
+        hdY = -32,
+        hdLeftX = 0,
+        hdRightX = 0,
+        
         -- BottomEdge
         beCoords = { 0, 1, 167/512, 178/512 },
         beH = 12,
-        beY = 0,
+        beY = -2,
         beLeftX = 0,
         beRightX = 0,
         
         -- LeftEdge
         leCoords = { 11/512, 18/512, 0, 1 },
         leW = 7,
-        leX = 14,
+        leX = 9,
         leTopY = 0,
         leBotY = 0,
         
@@ -281,14 +288,14 @@ FrameHelper.ThemeConfigs = {
         reTopY = 0,
         reBotY = 0,
         
-        -- Portrait Center
-        portraitX = -1,
-        portraitY = 1,
+        -- Portrait Center & Size
+        portraitX = -7,
+        portraitY = 7,
         portraitSize = 60,
         
         -- Close Button Center
         closeX = -13.5,
-        closeY = -13.5,
+        closeY = -14.5,
     },
     ["HiRes"] = {
         name        = "HiRes (2x Scaled)",
@@ -317,6 +324,12 @@ FrameHelper.ThemeConfigs = {
         teY = 3,
         teLeftX = -8,
         teRightX = 8,
+        
+        hdCoords = { 0, 1, 58/128, 70/128 },
+        hdH = 12,
+        hdY = -23,
+        hdLeftX = -8,
+        hdRightX = 8,
         
         beCoords = { 0, 1, 71/128, 89/128 },
         beH = 9,
@@ -363,20 +376,26 @@ function FrameHelper:ApplyHiResFrame(frame, options)
         frame.NineSlice:Hide()
     end
     
-    local border = frame.HiResBorder
-    if not border then
-        border = CreateFrame("Frame", nil, frame)
-        border:SetAllPoints(frame)
-        border:SetFrameLevel(math.max(1, frame:GetFrameLevel()))
-        frame.HiResBorder = border
-        
-        -- 1. Background / Center Fill
-        local bg = border:CreateTexture(nil, "BACKGROUND")
+    -- 1. Master Background Texture (anchored on frame, level = base)
+    if not frame.Bg then
+        local bg = frame:CreateTexture(nil, "BACKGROUND", nil, -5)
         bg:SetHorizTile(true)
         bg:SetVertTile(true)
         bg:SetPoint("TOPLEFT", frame, "TOPLEFT", 6, -20)
         bg:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -6, 6)
-        border.Bg = bg
+        frame.Bg = bg
+    end
+    frame.Bg:SetTexture(bgTexPath)
+    
+    local border = frame.HiResBorder
+    if not border then
+        border = CreateFrame("Frame", nil, frame)
+        border:SetAllPoints(frame)
+        -- Set border to higher level than inner content so it sits on top of edges
+        border:SetFrameLevel(frame:GetFrameLevel() + 10)
+        frame.HiResBorder = border
+        
+        border.Bg = frame.Bg
         
         -- 2. Top-Left Corner (Portrait Ring)
         local tl = border:CreateTexture(nil, "OVERLAY", nil, 2)
@@ -413,11 +432,17 @@ function FrameHelper:ApplyHiResFrame(frame, options)
         local re = border:CreateTexture(nil, "OVERLAY", nil, 1)
         re:SetVertTile(true)
         border.RightEdge = re
+        
+        -- 10. Header Divider (Bottom bar of double top header)
+        local hd = border:CreateTexture(nil, "OVERLAY", nil, 1)
+        hd:SetHorizTile(true)
+        border.HeaderDivider = hd
     end
     
-    -- Update Textures & Coordinates from active theme config
-    border.Bg:SetTexture(bgTexPath)
+    -- Ensure border is at frame level + 10
+    border:SetFrameLevel(frame:GetFrameLevel() + 10)
     
+    -- Update Textures & Coordinates from active theme config
     border.TopLeft:SetTexture(cfg.cornersFile)
     border.TopLeft:SetTexCoord(unpack(cfg.tlCoords))
     border.TopLeft:ClearAllPoints()
@@ -445,9 +470,19 @@ function FrameHelper:ApplyHiResFrame(frame, options)
     border.TopEdge:SetTexture(cfg.horizFile)
     border.TopEdge:SetTexCoord(unpack(cfg.teCoords))
     border.TopEdge:ClearAllPoints()
-    border.TopEdge:SetPoint("TOPLEFT", border.TopLeft, "TOPRIGHT", cfg.teLeftX or -8, cfg.teY)
-    border.TopEdge:SetPoint("TOPRIGHT", border.TopRight, "TOPLEFT", cfg.teRightX or 8, cfg.teY)
+    border.TopEdge:SetPoint("TOPLEFT", border.TopLeft, "TOPRIGHT", cfg.teLeftX or 0, cfg.teY)
+    border.TopEdge:SetPoint("TOPRIGHT", border.TopRight, "TOPLEFT", cfg.teRightX or 0, cfg.teY)
     border.TopEdge:SetHeight(cfg.teH)
+    
+    -- Bottom bar of double top header
+    if border.HeaderDivider then
+        border.HeaderDivider:SetTexture(cfg.horizFile)
+        border.HeaderDivider:SetTexCoord(unpack(cfg.hdCoords or { 0, 1, 148/512, 157/512 }))
+        border.HeaderDivider:ClearAllPoints()
+        border.HeaderDivider:SetPoint("TOPLEFT", border.TopLeft, "TOPRIGHT", cfg.hdLeftX or 0, cfg.hdY or -32)
+        border.HeaderDivider:SetPoint("TOPRIGHT", border.TopRight, "TOPLEFT", cfg.hdRightX or 0, cfg.hdY or -32)
+        border.HeaderDivider:SetHeight(cfg.hdH or 9)
+    end
     
     border.BottomEdge:SetTexture(cfg.horizFile)
     border.BottomEdge:SetTexCoord(unpack(cfg.beCoords))
@@ -508,19 +543,20 @@ function FrameHelper:ApplyHiResFrame(frame, options)
         frame.CloseButton:SetFrameLevel(border:GetFrameLevel() + 5)
     end
     
-    -- Position Title Text & Container
+    -- Position Title Text & Container inside the header slot
     if frame.TitleContainer then
         frame.TitleContainer:ClearAllPoints()
-        frame.TitleContainer:SetPoint("TOPLEFT", frame, "TOPLEFT", 60, -1)
-        frame.TitleContainer:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -38, -1)
-        frame.TitleContainer:SetHeight(22)
+        frame.TitleContainer:SetPoint("TOPLEFT", frame, "TOPLEFT", 60, cfg.teY or -12)
+        frame.TitleContainer:SetPoint("BOTTOMRIGHT", frame, "TOPRIGHT", -38, cfg.hdY or -32)
+        frame.TitleContainer:SetFrameLevel(border:GetFrameLevel() + 2)
         frame.TitleContainer:Show()
         if frame.TitleContainer.TitleText then
             frame.TitleContainer.TitleText:Show()
         end
     elseif frame.TitleText then
         frame.TitleText:ClearAllPoints()
-        frame.TitleText:SetPoint("TOP", frame, "TOP", 10, -5)
+        frame.TitleText:SetPoint("CENTER", frame, "TOP", 0, ((cfg.teY or -12) + (cfg.hdY or -32)) / 2)
+        frame.TitleText:SetDrawLayer("OVERLAY", 3)
         frame.TitleText:Show()
     end
 end
