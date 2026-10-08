@@ -246,17 +246,17 @@ FrameHelper.ThemeConfigs = {
         -- BottomLeft
         blCoords = { 10/512, 50/512, 80/512, 132/512 },
         blW = 40, blH = 52,
-        blX = -5, blY = -5,
+        blX = -5, blY = -4,
         
         -- BottomRight
         brCoords = { 220/512, 266/512, 80/512, 132/512 },
         brW = 46, brH = 52,
-        brX = 1, brY = -5,
+        brX = 1, brY = -4,
         
         -- TopEdge
         teCoords = { 0, 1, 124/512, 133/512 },
-        teH = 11,
-        teY = -12,
+        teH = 10,
+        teY = -13,
         teLeftX = 0,
         teRightX = 0,
         
@@ -271,13 +271,13 @@ FrameHelper.ThemeConfigs = {
         vdCoords = { 258/512, 265/512, 0, 1 },
         vdW = 7,
         vdX = 1,
-        vdTopY = 10,
-        vdBotY = -14,
+        vdTopY = 11,
+        vdBotY = -9,
         
         -- BottomEdge
         beCoords = { 0, 1, 167/512, 178/512 },
-        beH = 12,
-        beY = -2,
+        beH = 10,
+        beY = -1,
         beLeftX = 0,
         beRightX = 0,
         
@@ -303,6 +303,10 @@ FrameHelper.ThemeConfigs = {
         -- Close Button Center
         closeX = -13.5,
         closeY = -14.5,
+        
+        -- Title Centering
+        titleX = 0,
+        titleY = -27,
     },
     ["HiRes"] = {
         name        = "HiRes (2x Scaled)",
@@ -369,6 +373,9 @@ FrameHelper.ThemeConfigs = {
         
         closeX = -15,
         closeY = -15,
+        
+        titleX = 0,
+        titleY = -14,
     }
 }
 
@@ -383,7 +390,7 @@ function FrameHelper:ApplyHiResFrame(frame, options)
     local cfg = self.ThemeConfigs[themeKey] or self.ThemeConfigs["Metal"]
     self.CurrentTheme = themeKey
     
-    local bgTexPath = options.bgTexture or "Interface\\FrameGeneral\\UI-Background-Rock"
+    local bgTexPath = options.bgTexture or "Interface\\FrameGeneral\\UI-Background-Marble"
     
     -- Hide Blizzard native NineSlice
     if frame.NineSlice then
@@ -400,6 +407,7 @@ function FrameHelper:ApplyHiResFrame(frame, options)
         frame.Bg = bg
     end
     frame.Bg:SetTexture(bgTexPath)
+    frame.Bg:SetVertexColor(0.2, 0.2, 0.2, 1.0)
     
     local border = frame.HiResBorder
     if not border then
@@ -451,13 +459,25 @@ function FrameHelper:ApplyHiResFrame(frame, options)
         local hd = border:CreateTexture(nil, "OVERLAY", nil, 1)
         hd:SetHorizTile(true)
         border.HeaderDivider = hd
+        
+        -- 11. Title Bar Background (Tiled black marble between TopEdge and HeaderDivider)
+        local titleBg = border:CreateTexture(nil, "BACKGROUND", nil, -1)
+        titleBg:SetHorizTile(true)
+        titleBg:SetVertTile(true)
+        border.TitleBg = titleBg
     end
     
-    -- Ensure HeaderDivider exists even if border was created prior to its addition
+    -- Ensure HeaderDivider and TitleBg exist even if border was created prior to its addition
     if not border.HeaderDivider then
         local hd = border:CreateTexture(nil, "OVERLAY", nil, 1)
         hd:SetHorizTile(true)
         border.HeaderDivider = hd
+    end
+    if not border.TitleBg then
+        local titleBg = border:CreateTexture(nil, "BACKGROUND", nil, -1)
+        titleBg:SetHorizTile(true)
+        titleBg:SetVertTile(true)
+        border.TitleBg = titleBg
     end
     
     -- Ensure border is at frame level + 10
@@ -498,11 +518,20 @@ function FrameHelper:ApplyHiResFrame(frame, options)
     -- Bottom bar of double top header
     if border.HeaderDivider then
         border.HeaderDivider:SetTexture(cfg.horizFile)
-        border.HeaderDivider:SetTexCoord(unpack(cfg.hdCoords or { 0, 1, 148/512, 157/512 }))
+        border.HeaderDivider:SetTexCoord(unpack(cfg.hdCoords or { 0, 1, 149/512, 157/512 }))
         border.HeaderDivider:ClearAllPoints()
         border.HeaderDivider:SetPoint("TOPLEFT", border.TopLeft, "TOPRIGHT", cfg.hdLeftX or 0, cfg.hdY or -32)
         border.HeaderDivider:SetPoint("TOPRIGHT", border.TopRight, "TOPLEFT", cfg.hdRightX or 0, cfg.hdY or -32)
         border.HeaderDivider:SetHeight(cfg.hdH or 9)
+    end
+    
+    -- Title Bar Background (Tiled black marble behind the header / player name)
+    if border.TitleBg then
+        border.TitleBg:SetTexture("Interface\\FrameGeneral\\UI-Background-Marble")
+        border.TitleBg:SetVertexColor(0.2, 0.2, 0.2, 1.0)
+        border.TitleBg:ClearAllPoints()
+        border.TitleBg:SetPoint("TOPLEFT", border.TopLeft, "TOPRIGHT", cfg.teLeftX or 0, cfg.teY or -13)
+        border.TitleBg:SetPoint("BOTTOMRIGHT", border.TopRight, "TOPLEFT", cfg.hdRightX or 0, (cfg.hdY or -32) - (cfg.hdH or 9))
     end
     
     border.BottomEdge:SetTexture(cfg.horizFile)
@@ -565,22 +594,25 @@ function FrameHelper:ApplyHiResFrame(frame, options)
     end
     
     -- Position Title Text & Container inside the header slot
+    local titleTarget = (frame.TitleContainer and frame.TitleContainer.TitleText) or frame.TitleText or frame.Title
     if frame.TitleContainer then
         frame.TitleContainer:ClearAllPoints()
-        frame.TitleContainer:SetPoint("TOPLEFT", frame, "TOPLEFT", 60, cfg.teY or -12)
-        frame.TitleContainer:SetPoint("BOTTOMRIGHT", frame, "TOPRIGHT", -38, (cfg.hdY or -32) + (cfg.hdH or 9))
+        frame.TitleContainer:SetPoint("CENTER", frame, "TOP", cfg.titleX or 0, cfg.titleY or -27)
+        frame.TitleContainer:SetSize(400, 24)
         frame.TitleContainer:SetFrameLevel(border:GetFrameLevel() + 2)
         frame.TitleContainer:Show()
-        if frame.TitleContainer.TitleText then
-            frame.TitleContainer.TitleText:ClearAllPoints()
-            frame.TitleContainer.TitleText:SetPoint("CENTER", frame.TitleContainer, "CENTER", 0, 0)
-            frame.TitleContainer.TitleText:Show()
+    end
+    if titleTarget then
+        titleTarget:ClearAllPoints()
+        if frame.TitleContainer and titleTarget:GetParent() == frame.TitleContainer then
+            titleTarget:SetPoint("CENTER", frame.TitleContainer, "CENTER", 0, 0)
+        else
+            titleTarget:SetPoint("CENTER", frame, "TOP", cfg.titleX or 0, cfg.titleY or -27)
         end
-    elseif frame.TitleText then
-        frame.TitleText:ClearAllPoints()
-        frame.TitleText:SetPoint("CENTER", frame, "TOP", 0, ((cfg.teY or -12) + (cfg.hdY or -32)) / 2)
-        frame.TitleText:SetDrawLayer("OVERLAY", 3)
-        frame.TitleText:Show()
+        titleTarget:SetDrawLayer("OVERLAY", 3)
+        if titleTarget.SetJustifyH then titleTarget:SetJustifyH("CENTER") end
+        if titleTarget.SetJustifyV then titleTarget:SetJustifyV("MIDDLE") end
+        titleTarget:Show()
     end
     
     -- Update Character Vertical Divider if present
@@ -591,8 +623,8 @@ function FrameHelper:ApplyHiResFrame(frame, options)
         vDivider:SetTexCoord(unpack(cfg.vdCoords))
         vDivider:SetWidth(cfg.vdW or 7)
         vDivider:ClearAllPoints()
-        vDivider:SetPoint("TOP", leftArea, "TOPRIGHT", cfg.vdX or 1, cfg.vdTopY or 10)
-        vDivider:SetPoint("BOTTOM", leftArea, "BOTTOMRIGHT", cfg.vdX or 1, cfg.vdBotY or -14)
+        vDivider:SetPoint("TOP", leftArea, "TOPRIGHT", cfg.vdX or 1, cfg.vdTopY or 11)
+        vDivider:SetPoint("BOTTOM", leftArea, "BOTTOMRIGHT", cfg.vdX or 1, cfg.vdBotY or -9)
     end
 end
 
