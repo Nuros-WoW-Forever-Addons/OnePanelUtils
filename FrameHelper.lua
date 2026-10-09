@@ -262,7 +262,7 @@ FrameHelper.ThemeConfigs = {
         
         -- Header Divider (Bottom bar of double top header)
         hdCoords = { 0, 1, 149/512, 157/512 },
-        hdH = 9,
+        hdH = 8,
         hdY = -32,
         hdLeftX = 0,
         hdRightX = 0,
