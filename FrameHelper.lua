@@ -815,6 +815,54 @@ function FrameHelper:CreateSilverTab(parent, name, id, text)
     return btn
 end
 
+-------------------------------------------------------------------------------
+-- Silver Action Button Helpers (UIMenuButtonStretchTemplate / Silver Slices)
+-------------------------------------------------------------------------------
+
+--- Style an existing standard button with silver textures
+-- @param button Button: The button to style
+function FrameHelper:StyleButtonAsSilver(button)
+    if not button then return end
+    
+    local btnName = button.GetName and button:GetName()
+    
+    local left = button.Left or (btnName and _G[btnName .. "Left"])
+    local middle = button.Middle or (btnName and _G[btnName .. "Middle"])
+    local right = button.Right or (btnName and _G[btnName .. "Right"])
+    
+    if left and middle and right then
+        left:SetTexture("Interface\\Buttons\\UI-SilverButtonLG-Left-Up")
+        middle:SetTexture("Interface\\Buttons\\UI-SilverButtonLG-Mid-Up")
+        right:SetTexture("Interface\\Buttons\\UI-SilverButtonLG-Right-Up")
+    end
+end
+
+--- Create a standalone silver action button
+-- @param parent Frame: Parent frame
+-- @param name string|nil: Button name
+-- @param text string|nil: Button label
+-- @param template string|nil: Template override (defaults to UIMenuButtonStretchTemplate)
+-- @return Button: Created silver button
+function FrameHelper:CreateSilverButton(parent, name, text, template)
+    template = template or "UIMenuButtonStretchTemplate"
+    local btn = CreateFrame("Button", name, parent, template)
+    if text then
+        btn:SetText(text)
+    end
+    
+    if btn.SetNormalFontObject then
+        btn:SetNormalFontObject("GameFontHighlightSmall")
+    end
+    if btn.SetDisabledFontObject then
+        btn:SetDisabledFontObject("GameFontDisableSmall")
+    end
+    if btn.SetHighlightFontObject then
+        btn:SetHighlightFontObject("GameFontHighlightSmall")
+    end
+    
+    return btn
+end
+
 -- Register module with Core
 Utils:RegisterModule("FrameHelper", FrameHelper)
 
