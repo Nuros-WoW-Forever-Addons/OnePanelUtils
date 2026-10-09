@@ -819,6 +819,70 @@ end
 -- Silver Action Button Helpers (UIMenuButtonStretchTemplate / Silver Slices)
 -------------------------------------------------------------------------------
 
+--- Apply a Gunmetal/Metal background plate inside button borders
+-- @param btn Button: The button to style
+function FrameHelper:ApplyGunmetalButtonBackground(btn)
+    if not btn or btn.GunmetalBg then return end
+    
+    local bg = btn:CreateTexture(nil, "BACKGROUND", nil, -2)
+    bg:SetPoint("TOPLEFT", btn, "TOPLEFT", 2, -2)
+    bg:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", -2, 2)
+    bg:SetTexture("Interface\\FrameGeneral\\UI-Background-Rock")
+    bg:SetHorizTile(true)
+    bg:SetVertTile(true)
+    bg:SetVertexColor(0.26, 0.29, 0.33, 0.95)
+    if not bg:GetTexture() then
+        bg:SetTexture("Interface\\FrameGeneral\\UI-Background-Marble")
+        if not bg:GetTexture() then
+            bg:SetColorTexture(0.22, 0.25, 0.28, 0.95)
+        end
+    end
+    btn.GunmetalBg = bg
+    
+    -- Subtle top metallic sheen
+    local sheen = btn:CreateTexture(nil, "BACKGROUND", nil, -1)
+    sheen:SetPoint("TOPLEFT", btn, "TOPLEFT", 2, -2)
+    sheen:SetPoint("BOTTOMRIGHT", btn, "RIGHT", -2, 0)
+    sheen:SetColorTexture(1, 1, 1, 0.06)
+    btn.GunmetalSheen = sheen
+    
+    local function UpdateBgState()
+        if not btn:IsEnabled() then
+            bg:SetVertexColor(0.12, 0.13, 0.15, 0.6)
+            sheen:SetAlpha(0.02)
+        else
+            bg:SetVertexColor(0.26, 0.29, 0.33, 0.95)
+            sheen:SetAlpha(0.06)
+        end
+    end
+    
+    btn:HookScript("OnMouseDown", function()
+        if btn:IsEnabled() then
+            bg:SetVertexColor(0.18, 0.20, 0.23, 1.0)
+            sheen:SetAlpha(0.02)
+        end
+    end)
+    btn:HookScript("OnMouseUp", function()
+        UpdateBgState()
+    end)
+    btn:HookScript("OnEnter", function()
+        if btn:IsEnabled() then
+            bg:SetVertexColor(0.34, 0.38, 0.43, 1.0)
+            sheen:SetAlpha(0.12)
+        end
+    end)
+    btn:HookScript("OnLeave", function()
+        UpdateBgState()
+    end)
+    
+    if btn.Enable and btn.Disable then
+        hooksecurefunc(btn, "Enable", UpdateBgState)
+        hooksecurefunc(btn, "Disable", UpdateBgState)
+    end
+    
+    UpdateBgState()
+end
+
 --- Style an existing standard button with silver textures
 -- @param button Button: The button to style
 function FrameHelper:StyleButtonAsSilver(button)
@@ -835,6 +899,8 @@ function FrameHelper:StyleButtonAsSilver(button)
         middle:SetTexture("Interface\\Buttons\\UI-SilverButtonLG-Mid-Up")
         right:SetTexture("Interface\\Buttons\\UI-SilverButtonLG-Right-Up")
     end
+    
+    self:ApplyGunmetalButtonBackground(button)
 end
 
 --- Create a standalone silver action button
@@ -859,6 +925,8 @@ function FrameHelper:CreateSilverButton(parent, name, text, template)
     if btn.SetHighlightFontObject then
         btn:SetHighlightFontObject("GameFontHighlightSmall")
     end
+    
+    self:ApplyGunmetalButtonBackground(btn)
     
     return btn
 end
