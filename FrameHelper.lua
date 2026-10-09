@@ -816,105 +816,135 @@ function FrameHelper:CreateSilverTab(parent, name, id, text)
 end
 
 -------------------------------------------------------------------------------
--- Silver Action Button Helpers (UIMenuButtonStretchTemplate / Silver Slices)
+-- Metal / Grey Action Button Helpers (UI-Panel-Button-Disabled / UI-Panel-Button-Disabled-Down)
 -------------------------------------------------------------------------------
 
---- Apply a Gunmetal/Metal background plate inside button borders
+local BTN_DISABLED_UP   = "Interface\\Buttons\\UI-Panel-Button-Disabled"
+local BTN_DISABLED_DOWN = "Interface\\Buttons\\UI-Panel-Button-Disabled-Down"
+local BTN_HIGHLIGHT     = "Interface\\Buttons\\UI-Panel-Button-Highlight"
+
+--- Style a button with UI-Panel-Button-Disabled and UI-Panel-Button-Disabled-Down textures
 -- @param btn Button: The button to style
-function FrameHelper:ApplyGunmetalButtonBackground(btn)
-    if not btn or btn.GunmetalBg then return end
+function FrameHelper:StyleButtonAsMetal(btn)
+    if not btn or btn.isStyledAsMetal then return end
+    btn.isStyledAsMetal = true
     
-    local bg = btn:CreateTexture(nil, "BACKGROUND", nil, -2)
-    bg:SetPoint("TOPLEFT", btn, "TOPLEFT", 2, -2)
-    bg:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", -2, 2)
-    bg:SetTexture("Interface\\FrameGeneral\\UI-Background-Rock")
-    bg:SetHorizTile(true)
-    bg:SetVertTile(true)
-    bg:SetVertexColor(0.26, 0.29, 0.33, 0.95)
-    if not bg:GetTexture() then
-        bg:SetTexture("Interface\\FrameGeneral\\UI-Background-Marble")
-        if not bg:GetTexture() then
-            bg:SetColorTexture(0.22, 0.25, 0.28, 0.95)
-        end
+    -- If button already has 3 slices from template (e.g. UIPanelButtonTemplate Left/Middle/Right), hide them
+    local btnName = btn.GetName and btn:GetName()
+    local oldLeft = btn.Left or (btnName and _G[btnName .. "Left"])
+    local oldMiddle = btn.Middle or (btnName and _G[btnName .. "Middle"])
+    local oldRight = btn.Right or (btnName and _G[btnName .. "Right"])
+    if oldLeft then oldLeft:Hide() end
+    if oldMiddle then oldMiddle:Hide() end
+    if oldRight then oldRight:Hide() end
+    
+    -- 3-slice background textures using UI-Panel-Button-Disabled (.blp)
+    local left = btn:CreateTexture(nil, "BACKGROUND")
+    left:SetSize(12, btn:GetHeight() or 22)
+    left:SetPoint("TOPLEFT", btn, "TOPLEFT", 0, 0)
+    left:SetPoint("BOTTOMLEFT", btn, "BOTTOMLEFT", 0, 0)
+    btn.MetalLeft = left
+    
+    local right = btn:CreateTexture(nil, "BACKGROUND")
+    right:SetSize(12, btn:GetHeight() or 22)
+    right:SetPoint("TOPRIGHT", btn, "TOPRIGHT", 0, 0)
+    right:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", 0, 0)
+    btn.MetalRight = right
+    
+    local middle = btn:CreateTexture(nil, "BACKGROUND")
+    middle:SetPoint("TOPLEFT", left, "TOPRIGHT", 0, 0)
+    middle:SetPoint("BOTTOMRIGHT", right, "BOTTOMLEFT", 0, 0)
+    btn.MetalMiddle = middle
+    
+    -- 3-slice highlight textures using UI-Panel-Button-Highlight
+    local hlLeft = btn:CreateTexture(nil, "HIGHLIGHT")
+    hlLeft:SetSize(12, btn:GetHeight() or 22)
+    hlLeft:SetPoint("TOPLEFT", btn, "TOPLEFT", 0, 0)
+    hlLeft:SetPoint("BOTTOMLEFT", btn, "BOTTOMLEFT", 0, 0)
+    hlLeft:SetTexture(BTN_HIGHLIGHT)
+    hlLeft:SetTexCoord(0, 0.09375, 0, 0.6875)
+    hlLeft:SetBlendMode("ADD")
+    
+    local hlRight = btn:CreateTexture(nil, "HIGHLIGHT")
+    hlRight:SetSize(12, btn:GetHeight() or 22)
+    hlRight:SetPoint("TOPRIGHT", btn, "TOPRIGHT", 0, 0)
+    hlRight:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", 0, 0)
+    hlRight:SetTexture(BTN_HIGHLIGHT)
+    hlRight:SetTexCoord(0.53125, 0.625, 0, 0.6875)
+    hlRight:SetBlendMode("ADD")
+    
+    local hlMid = btn:CreateTexture(nil, "HIGHLIGHT")
+    hlMid:SetPoint("TOPLEFT", hlLeft, "TOPRIGHT", 0, 0)
+    hlMid:SetPoint("BOTTOMRIGHT", hlRight, "BOTTOMLEFT", 0, 0)
+    hlMid:SetTexture(BTN_HIGHLIGHT)
+    hlMid:SetTexCoord(0.09375, 0.53125, 0, 0.6875)
+    hlMid:SetBlendMode("ADD")
+    
+    local function ApplyTextureState(texFile, r, g, b, a)
+        left:SetTexture(texFile)
+        left:SetTexCoord(0, 0.09375, 0, 0.6875)
+        
+        middle:SetTexture(texFile)
+        middle:SetTexCoord(0.09375, 0.53125, 0, 0.6875)
+        
+        right:SetTexture(texFile)
+        right:SetTexCoord(0.53125, 0.625, 0, 0.6875)
+        
+        r = r or 1; g = g or 1; b = b or 1; a = a or 1
+        left:SetVertexColor(r, g, b, a)
+        middle:SetVertexColor(r, g, b, a)
+        right:SetVertexColor(r, g, b, a)
     end
-    btn.GunmetalBg = bg
     
-    -- Subtle top metallic sheen
-    local sheen = btn:CreateTexture(nil, "BACKGROUND", nil, -1)
-    sheen:SetPoint("TOPLEFT", btn, "TOPLEFT", 2, -2)
-    sheen:SetPoint("BOTTOMRIGHT", btn, "RIGHT", -2, 0)
-    sheen:SetColorTexture(1, 1, 1, 0.06)
-    btn.GunmetalSheen = sheen
-    
-    local function UpdateBgState()
+    local function UpdateVisualState()
         if not btn:IsEnabled() then
-            bg:SetVertexColor(0.12, 0.13, 0.15, 0.6)
-            sheen:SetAlpha(0.02)
+            ApplyTextureState(BTN_DISABLED_UP, 0.55, 0.55, 0.55, 0.7)
+            if btn.SetDisabledFontObject then
+                btn:SetDisabledFontObject("GameFontDisableSmall")
+            end
         else
-            bg:SetVertexColor(0.26, 0.29, 0.33, 0.95)
-            sheen:SetAlpha(0.06)
+            ApplyTextureState(BTN_DISABLED_UP, 1, 1, 1, 1)
+            if btn.SetNormalFontObject then
+                btn:SetNormalFontObject("GameFontHighlightSmall")
+            end
         end
     end
     
     btn:HookScript("OnMouseDown", function()
         if btn:IsEnabled() then
-            bg:SetVertexColor(0.18, 0.20, 0.23, 1.0)
-            sheen:SetAlpha(0.02)
+            ApplyTextureState(BTN_DISABLED_DOWN, 1, 1, 1, 1)
         end
     end)
     btn:HookScript("OnMouseUp", function()
-        UpdateBgState()
-    end)
-    btn:HookScript("OnEnter", function()
-        if btn:IsEnabled() then
-            bg:SetVertexColor(0.34, 0.38, 0.43, 1.0)
-            sheen:SetAlpha(0.12)
-        end
-    end)
-    btn:HookScript("OnLeave", function()
-        UpdateBgState()
+        UpdateVisualState()
     end)
     
     if btn.Enable and btn.Disable then
-        hooksecurefunc(btn, "Enable", UpdateBgState)
-        hooksecurefunc(btn, "Disable", UpdateBgState)
+        hooksecurefunc(btn, "Enable", UpdateVisualState)
+        hooksecurefunc(btn, "Disable", UpdateVisualState)
     end
     
-    UpdateBgState()
+    if btn.SetPushedTextOffset then
+        btn:SetPushedTextOffset(1, -1)
+    end
+    
+    UpdateVisualState()
 end
 
---- Style an existing standard button with silver textures
+--- Style an existing standard button with metal textures (alias)
 -- @param button Button: The button to style
 function FrameHelper:StyleButtonAsSilver(button)
-    if not button then return end
-    
-    local btnName = button.GetName and button:GetName()
-    
-    local left = button.Left or (btnName and _G[btnName .. "Left"])
-    local middle = button.Middle or (btnName and _G[btnName .. "Middle"])
-    local right = button.Right or (btnName and _G[btnName .. "Right"])
-    
-    if left and middle and right then
-        left:SetTexture("Interface\\Buttons\\UI-SilverButtonLG-Left-Up")
-        middle:SetTexture("Interface\\Buttons\\UI-SilverButtonLG-Mid-Up")
-        right:SetTexture("Interface\\Buttons\\UI-SilverButtonLG-Right-Up")
-    end
-    
-    self:ApplyGunmetalButtonBackground(button)
+    self:StyleButtonAsMetal(button)
 end
 
---- Create a standalone silver action button
+--- Create a standalone metal action button
 -- @param parent Frame: Parent frame
 -- @param name string|nil: Button name
 -- @param text string|nil: Button label
--- @param template string|nil: Template override (defaults to UIMenuButtonStretchTemplate)
--- @return Button: Created silver button
+-- @param template string|nil: Optional template override
+-- @return Button: Created metal button
 function FrameHelper:CreateSilverButton(parent, name, text, template)
-    template = template or "UIMenuButtonStretchTemplate"
     local btn = CreateFrame("Button", name, parent, template)
-    if text then
-        btn:SetText(text)
-    end
     
     if btn.SetNormalFontObject then
         btn:SetNormalFontObject("GameFontHighlightSmall")
@@ -926,7 +956,11 @@ function FrameHelper:CreateSilverButton(parent, name, text, template)
         btn:SetHighlightFontObject("GameFontHighlightSmall")
     end
     
-    self:ApplyGunmetalButtonBackground(btn)
+    if text then
+        btn:SetText(text)
+    end
+    
+    self:StyleButtonAsMetal(btn)
     
     return btn
 end
