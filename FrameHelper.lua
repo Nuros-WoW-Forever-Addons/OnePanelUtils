@@ -674,5 +674,147 @@ SlashCmdList["ONEPANELALIGN"] = function(msg)
 end
 
 
+-------------------------------------------------------------------------------
+-- Silver Tab Styling Helpers (Option A: OptionsFrame Silver/Metal BLPs)
+-------------------------------------------------------------------------------
+
+local SILVER_TAB_ACTIVE   = "Interface\\OptionsFrame\\UI-OptionsFrame-ActiveTab"
+local SILVER_TAB_INACTIVE = "Interface\\OptionsFrame\\UI-OptionsFrame-InactiveTab"
+
+--- Style an existing standard tab button (or template-based button) with Option A silver textures
+-- @param button Button: The tab button to style
+function FrameHelper:StyleTabAsSilver(button)
+    if not button then return end
+    
+    local btnName = button.GetName and button:GetName()
+    
+    -- Inactive Textures
+    local left = button.Left or (btnName and _G[btnName .. "Left"])
+    local middle = button.Middle or (btnName and _G[btnName .. "Middle"])
+    local right = button.Right or (btnName and _G[btnName .. "Right"])
+    
+    if left then
+        left:SetTexture(SILVER_TAB_INACTIVE)
+        left:SetTexCoord(0, 0.15625, 0, 1.0)
+    end
+    if middle then
+        middle:SetTexture(SILVER_TAB_INACTIVE)
+        middle:SetTexCoord(0.15625, 0.84375, 0, 1.0)
+    end
+    if right then
+        right:SetTexture(SILVER_TAB_INACTIVE)
+        right:SetTexCoord(0.84375, 1.0, 0, 1.0)
+    end
+    
+    -- Active / Selected Textures
+    local leftDisabled = button.LeftDisabled or (btnName and _G[btnName .. "LeftDisabled"])
+    local middleDisabled = button.MiddleDisabled or (btnName and _G[btnName .. "MiddleDisabled"])
+    local rightDisabled = button.RightDisabled or (btnName and _G[btnName .. "RightDisabled"])
+    
+    if leftDisabled then
+        leftDisabled:SetTexture(SILVER_TAB_ACTIVE)
+        leftDisabled:SetTexCoord(0, 0.15625, 0, 1.0)
+    end
+    if middleDisabled then
+        middleDisabled:SetTexture(SILVER_TAB_ACTIVE)
+        middleDisabled:SetTexCoord(0.15625, 0.84375, 0, 1.0)
+    end
+    if rightDisabled then
+        rightDisabled:SetTexture(SILVER_TAB_ACTIVE)
+        rightDisabled:SetTexCoord(0.84375, 1.0, 0, 1.0)
+    end
+end
+
+--- Create a standalone horizontal tab button styled with Option A silver metal textures
+-- @param parent Frame: Parent frame container
+-- @param name string|nil: Unique global button name
+-- @param id number: Tab ID index
+-- @param text string: Display text for tab label
+-- @return Button: Created and styled silver tab button
+function FrameHelper:CreateSilverTab(parent, name, id, text)
+    local btn = CreateFrame("Button", name, parent)
+    btn:SetHeight(32)
+    btn:SetID(id or 1)
+    
+    -- Inactive state
+    local left = btn:CreateTexture(name and (name .. "Left"), "BACKGROUND")
+    left:SetTexture(SILVER_TAB_INACTIVE)
+    left:SetSize(20, 32)
+    left:SetPoint("TOPLEFT", btn, "TOPLEFT", 0, -1)
+    left:SetTexCoord(0, 0.15625, 0, 1.0)
+    btn.Left = left
+    
+    local right = btn:CreateTexture(name and (name .. "Right"), "BACKGROUND")
+    right:SetTexture(SILVER_TAB_INACTIVE)
+    right:SetSize(20, 32)
+    right:SetPoint("TOPRIGHT", btn, "TOPRIGHT", 0, -1)
+    right:SetTexCoord(0.84375, 1.0, 0, 1.0)
+    btn.Right = right
+    
+    local middle = btn:CreateTexture(name and (name .. "Middle"), "BACKGROUND")
+    middle:SetTexture(SILVER_TAB_INACTIVE)
+    middle:SetHeight(32)
+    middle:SetPoint("LEFT", left, "RIGHT", 0, 0)
+    middle:SetPoint("RIGHT", right, "LEFT", 0, 0)
+    middle:SetTexCoord(0.15625, 0.84375, 0, 1.0)
+    btn.Middle = middle
+    
+    -- Active / Selected state
+    local leftDisabled = btn:CreateTexture(name and (name .. "LeftDisabled"), "BACKGROUND")
+    leftDisabled:SetTexture(SILVER_TAB_ACTIVE)
+    leftDisabled:SetSize(20, 35)
+    leftDisabled:SetPoint("TOPLEFT", btn, "TOPLEFT", 0, 2)
+    leftDisabled:SetTexCoord(0, 0.15625, 0, 1.0)
+    leftDisabled:Hide()
+    btn.LeftDisabled = leftDisabled
+    
+    local rightDisabled = btn:CreateTexture(name and (name .. "RightDisabled"), "BACKGROUND")
+    rightDisabled:SetTexture(SILVER_TAB_ACTIVE)
+    rightDisabled:SetSize(20, 35)
+    rightDisabled:SetPoint("TOPRIGHT", btn, "TOPRIGHT", 0, 2)
+    rightDisabled:SetTexCoord(0.84375, 1.0, 0, 1.0)
+    rightDisabled:Hide()
+    btn.RightDisabled = rightDisabled
+    
+    local middleDisabled = btn:CreateTexture(name and (name .. "MiddleDisabled"), "BACKGROUND")
+    middleDisabled:SetTexture(SILVER_TAB_ACTIVE)
+    middleDisabled:SetHeight(35)
+    middleDisabled:SetPoint("LEFT", leftDisabled, "RIGHT", 0, 0)
+    middleDisabled:SetPoint("RIGHT", rightDisabled, "LEFT", 0, 0)
+    middleDisabled:SetTexCoord(0.15625, 0.84375, 0, 1.0)
+    middleDisabled:Hide()
+    btn.MiddleDisabled = middleDisabled
+    
+    -- Highlight
+    local highlight = btn:CreateTexture(name and (name .. "Highlight"), "HIGHLIGHT")
+    highlight:SetTexture("Interface\\PaperDollInfoFrame\\UI-Character-Tab-RealHighlight")
+    highlight:SetBlendMode("ADD")
+    highlight:SetPoint("TOPLEFT", btn, "TOPLEFT", 3, 5)
+    highlight:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", -3, 0)
+    btn.Highlight = highlight
+    
+    -- Text Label
+    local fs = btn:CreateFontString(name and (name .. "Text"), "OVERLAY", "GameFontNormalSmall")
+    fs:SetPoint("CENTER", btn, "CENTER", 0, 2)
+    fs:SetText(text or "")
+    btn.Text = fs
+    btn:SetFontString(fs)
+    
+    btn.SetSelected = function(self, selected)
+        if selected then
+            self.Left:Hide(); self.Middle:Hide(); self.Right:Hide()
+            self.LeftDisabled:Show(); self.MiddleDisabled:Show(); self.RightDisabled:Show()
+            self.Text:SetTextColor(1, 1, 1)
+        else
+            self.Left:Show(); self.Middle:Show(); self.Right:Show()
+            self.LeftDisabled:Hide(); self.MiddleDisabled:Hide(); self.RightDisabled:Hide()
+            self.Text:SetTextColor(0.7, 0.7, 0.7)
+        end
+    end
+    
+    return btn
+end
+
 -- Register module with Core
 Utils:RegisterModule("FrameHelper", FrameHelper)
+
