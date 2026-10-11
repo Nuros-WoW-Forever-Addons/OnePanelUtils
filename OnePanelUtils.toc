@@ -3,6 +3,7 @@
 ## Notes: Core utility library, safe call dispatcher, logging, frame helper, and event system for OnePanel Suite.
 ## Author: OnePanel Suite Team
 ## Version: 0.0.1
+## IconTexture: Interface\Icons\INV_Misc_Wrench_01
 ## SavedVariables: OnePanelUtilsDB
 
 Core.lua
